@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset - SGF PRF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <h1>Reset do Sistema</h1>
+    <p>Limpando dados armazenados...</p>
+    
+    <script>
+        // Limpar localStorage
+        localStorage.clear();
+        
+        // Reinicializar usuários
+        const AUTH_KEYS = {
+            usuarios: "prf_usuarios",
+            sessao: "prf_sessao",
+            ultimaAtividade: "prf_ultima_atividade"
+        };
+        
+        function criptografarSenha(senha) {
+            return CryptoJS.SHA256(senha + "prf_salt_2024").toString();
+        }
+        
+        const usuarios = [
+            {
+                id: 1,
+                nome: "Admin",
+                usuario: "admin",
+                senha: criptografarSenha("123456"),
+                email: "admin@prf.gov.br",
+                cargo: "admin",
+                ativo: true,
+                dataCadastro: new Date().toISOString()
+            },
+            {
+                id: 2,
+                nome: "Operador",
+                usuario: "operador",
+                senha: criptografarSenha("123456"),
+                email: "operador@prf.gov.br",
+                cargo: "operador",
+                ativo: true,
+                dataCadastro: new Date().toISOString()
+            }
+        ];
+        
+        localStorage.setItem(AUTH_KEYS.usuarios, JSON.stringify(usuarios));
+        
+        document.body.innerHTML += `
+            <h2>✅ Reset concluído com sucesso!</h2>
+            <p>Usuários restaurados:</p>
+            <ul>
+                <li><strong>Usuário:</strong> admin | <strong>Senha:</strong> 123456</li>
+                <li><strong>Usuário:</strong> operador | <strong>Senha:</strong> 123456</li>
+            </ul>
+            <p>
+                <a href="index.html" style="padding: 10px 20px; background: blue; color: white; text-decoration: none; border-radius: 5px;">
+                    Ir para Login
+                </a>
+            </p>
+        `;
+    </script>
+</body>
+</html>

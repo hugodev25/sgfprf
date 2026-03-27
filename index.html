@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGF - Sistema de Gestão de Frotas | PRF</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <style>
+        :root {
+            --prf-azul: #002244;
+            --prf-azul-claro: #0b3d91;
+            --prf-amarelo: #ffcc00;
+            --bg-fundo: #e9ecef;
+            --texto-dark: #2c3e50;
+            --sucesso: #28a745;
+            --alerta: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--texto-dark);
+            background: linear-gradient(135deg, var(--prf-azul) 0%, var(--prf-azul-claro) 100%);
+            min-height: 100vh;
+            display: flex;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('c:\Users\Hugo\Pictures\img.prf\back.jpg');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        /* ========== TELA DE LOGIN ========== */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .login-container.hidden {
+            display: none;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 34, 68, 0.3);
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--prf-azul) 0%, var(--prf-azul-claro) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 5px 15px rgba(0, 34, 68, 0.2);
+        }
+
+        .login-header .logo i {
+            color: var(--prf-amarelo);
+            font-size: 40px;
+        }
+
+        .login-header h1 {
+            color: var(--prf-azul);
+            font-size: 28px;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .login-header p {
+            color: #999;
+            font-size: 14px;
+        }
+
+        /* ========== FORMULÁRIO ========== */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--prf-azul);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--prf-amarelo);
+            box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #bbb;
+        }
+
+        /* ========== CHECKBOX REMEMBER ========== */
+        .remember-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .remember-section label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            margin: 0;
+            color: #666;
+        }
+
+        .remember-section input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .remember-section a {
+            color: var(--prf-azul-claro);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .remember-section a:hover {
+            text-decoration: underline;
+        }
+
+        /* ========== BOTÃO LOGIN ========== */
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--prf-azul) 0%, var(--prf-azul-claro) 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 34, 68, 0.3);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ========== MENSAGENS ========== */
+        .error-message {
+            background: #ffebee;
+            color: var(--alerta);
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid var(--alerta);
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.3s ease-in-out;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: var(--sucesso);
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid var(--sucesso);
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* ========== LINK CRIAR CONTA ========== */
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .login-footer a {
+            color: var(--prf-azul-claro);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ========== DASHBOARD ========== */
+        .dashboard {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .dashboard.active {
+            display: flex;
+        }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(135deg, rgba(0, 34, 68, 0.95), rgba(11, 61, 145, 0.95));
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--prf-amarelo);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            flex-wrap: wrap;
+            gap: 20px;
+            backdrop-filter: blur(8px);
+        }
+
+        .logo-area { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+        }
+
+        .logo-area i {
+            font-size: 32px;
+            color: var(--prf-amarelo);
+        }
+
+        .logo-area h2 {
+            font-size: 20px;
+        }
+
+        .user-info { 
+            font-size: 0.9rem; 
+            text-align: right; 
+        }
+
+        .user-info .logout-btn {
+            background: var(--alerta);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: 0.2s;
+            font-weight: 600;
+        }
+
+        .user-info .logout-btn:hover {
+            background: #c82333;
+        }
+
+        /* MAIN CONTAINER */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background: rgba(255,255,255,0.1);
+        }
+
+        nav.sidebar {
+            width: 240px;
+            background: rgba(11,61,145,0.95);
+            padding-top: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 16px rgba(0,0,0,0.25);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid transparent;
+            transition: 0.2s;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--prf-amarelo);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 204, 0, 0.2);
+            border-left: 4px solid var(--prf-amarelo);
+            color: var(--prf-amarelo);
+        }
+
+        .nav-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .nav-item.disabled:hover {
+            background: transparent;
+            border-left: 4px solid transparent;
+        }
+
+        /* CONTEÚDO */
+        .content {
+            flex: 1;
+            background: rgba(233, 236, 239, 0.5) url('c:\\Users\\Hugo\\Pictures\\img.prf\\back.jpg') no-repeat center/cover;
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        /* CARDS */
+        .card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(243,247,251,0.9));
+            border: 1px solid rgba(76,123,205,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 22px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+        }
+
+        .card h3 {
+            color: #043c7a;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        /* BOTÕES */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--prf-azul) 0%, var(--prf-azul-claro) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 34, 68, 0.3);
+        }
+
+        .btn-success {
+            background: var(--sucesso);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: var(--alerta);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .welcome-message {
+            font-size: 24px;
+            color: var(--prf-azul);
+            margin-bottom: 20px;
+        }
+
+        /* ========== MODAL ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: var(--alerta);
+        }
+
+        .modal h2 {
+            color: var(--prf-azul);
+            margin-bottom: 20px;
+            font-size: 22px;
+            clear: both;
+        }
+
+        /* ========== TABS CUSTOMIZADAS ========== */
+        .nav-tabs {
+            border-bottom: 2px solid var(--prf-amarelo) !important;
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--texto-dark);
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .nav-tabs .nav-link:hover {
+            border-bottom-color: var(--prf-amarelo);
+            color: var(--prf-azul);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, var(--prf-azul) 0%, var(--prf-azul-claro) 100%);
+            border-bottom: 3px solid var(--prf-amarelo);
+        }
+
+        .tab-content {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 0 0 10px 10px;
+            padding: 20px;
+        }
+
+        .tab-pane {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* ========== ALERT CUSTOMIZADO ========== */
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+
+        .badge {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* ========== TABLE ESTILOS ========== */
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, rgba(0, 34, 68, 0.1) 0%, rgba(11, 61, 145, 0.1) 100%);
+            color: var(--prf-azul);
+            font-weight: 700;
+            border-bottom: 2px solid var(--prf-amarelo);
+        }
+
+        .table tbody tr:hover {
+            background: rgba(0, 34, 68, 0.05);
+        }
+
+        /* ========== FORM CONTROLS ========== */
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--prf-amarelo);
+            box-shadow: 0 0 0 0.2rem rgba(255, 204, 0, 0.25);
+        }
+
+        .form-control,
+        .form-select {
+            border-color: #ddd;
+        }
+
+        .form-control::placeholder {
+            color: #999;
+        }
+
+        /* ========== CARDS SERVIÇOS ========== */
+        .card-servico-pendente {
+            border-left: 4px solid var(--erro-vermelho) !important;
+            background: rgba(255, 59, 48, 0.05);
+        }
+
+        .card-servico-concluido {
+            border-left: 4px solid var(--sucesso-verde) !important;
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, rgba(11, 61, 145, 0.1) 0%, rgba(255, 204, 0, 0.1) 100%);
+            border-bottom: 2px solid var(--prf-amarelo);
+            font-weight: 600;
+            color: var(--prf-azul);
+        }
+
+        /* ========== SERVICOS ATIVOS - TWO COLUMN ========== */
+        .servicos-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .coluna-pendentes h5,
+        .coluna-concluidos h5 {
+            font-weight: 700;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .coluna-pendentes h5 {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--erro-vermelho);
+        }
+
+        .coluna-concluidos h5 {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--sucesso-verde);
+        }
+
+        .servico-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .servico-item strong {
+            display: block;
+            color: var(--prf-azul);
+        }
+
+        /* ========== FILTROS ========== */
+        .filtro-group {
+            background: rgba(11, 61, 145, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--prf-amarelo);
+        }
+
+        .filtro-group h5 {
+            color: var(--prf-azul);
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .btn-filtrar {
+            background: linear-gradient(135deg, var(--prf-azul) 0%, var(--prf-azul-claro) 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-filtrar:hover {
+            background: linear-gradient(135deg, var(--prf-azul-claro) 0%, var(--prf-azul) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(11, 61, 145, 0.3);
+        }
+
+        .btn-limpar-filtro {
+            background: #f0f0f0;
+            color: var(--prf-azul);
+            border: 1px solid #ddd;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-limpar-filtro:hover {
+            background: #e0e0e0;
+            border-color: var(--prf-azul);
+        }
+
+        /* ========== RESPONSIVO ========== */
+        @media (max-width: 768px) {
+            .servicos-columns {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
+
+            .table {
+                font-size: 12px;
+            }
+
+            .btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ========== TELA DE LOGIN ========== -->
+   <div class="login-container" id="loginContainer">
+    <div class="login-box">
+        <div class="login-header">
+            <div class="logo">
+                <img src="https://realizeeducacao.com.br/wp-content/webp-express/webp-images/uploads/2021/01/PRF.png.webp" alt="Logo PRF" style="width: 270px;">
+            </div>
+            <h1>SGF PRF</h1>
+            <p>Sistema de Gestão de Frotas</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <form id="loginForm" onsubmit="fazerLogin(event)">
+            <div class="form-group">
+                <label for="loginUser">
+                    <i class="fas fa-user"></i> Usuário
+                </label>
+                <input 
+                    type="text" 
+                    id="loginUser" 
+                    placeholder="Digite seu usuário" 
+                    required               >
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">
+                        <i class="fas fa-lock"></i> Senha
+                    </label>
+                    <input 
+                        type="password" 
+                        id="loginPassword" 
+                        placeholder="Digite sua senha" 
+                        required
+                    >
+                </div>
+
+                <div class="remember-section">
+                    <label>
+                        <input type="checkbox" id="rememberMe">
+                        Lembrar-me
+                    </label>
+                    <a href="#" onclick="abrirModalRecuperarSenha(event)">Esqueci minha senha</a>
+                </div>
+
+                <button type="submit" class="btn-login" id="btnLogin">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+            </form>
+
+            <div class="login-footer">
+                Não tem conta? 
+                <a onclick="abrirModalCadastro()">Criar conta</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- <!-- ========== DASHBOARD ========== -->
+<div class="dashboard" id="dashboard">
+    <header>
+        <div class="logo-area">
+            <img src="c:\Users\Hugo\Downloads\i_pinimg.png" 
+                 alt="Logo PRF" 
+                 style="width:200px; height:150px; object-fit:contain;">
+            <h2>SGF - Sistema de Gestão de Frotas</h2>
+        </div>
+        
+        <div class="user-info">
+            <div>Bem-vindo, <strong id="nomeUsuario">Usuário</strong> <span id="cargoUsuario"></span>!</div>
+            <button class="logout-btn" onclick="fazerLogout()">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </div>
+        </header>
+
+        <div class="main-container">
+            <nav class="sidebar">
+                <div class="nav-item active" onclick="abrirPagina('home')">
+                    <i class="fas fa-home"></i> Início
+                </div>
+                <div class="nav-item" onclick="abrirPagina('veiculos')">
+                    <i class="fas fa-car"></i> Veículos
+                </div>
+                <div class="nav-item" onclick="abrirPagina('motoristas')">
+                    <i class="fas fa-id-card"></i> Motoristas
+                </div>
+                <div class="nav-item" onclick="abrirPagina('servicos')">
+                    <i class="fas fa-tools"></i> Serviços
+                </div>
+                <div class="nav-item" onclick="abrirPagina('missoes')">
+                    <i class="fas fa-tasks"></i> Missões
+                </div>
+                <div class="nav-item" onclick="abrirPagina('relatorios')">
+                    <i class="fas fa-file-pdf"></i> Relatórios
+                </div>
+                <div class="nav-item" onclick="abrirPagina('configuracoes')">
+                    <i class="fas fa-cog"></i> Configurações
+                </div>
+            </nav>
+
+            <div class="content">
+                <div id="pagina-home">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-bar"></i> Dashboard</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card text-center" style="cursor: pointer; transition: 0.3s;" onclick="mostrarViaturasEmUso()">
+                                        <div class="card-body">
+                                            <h3 id="countTotal" class="text-primary">0</h3>
+                                            <p>Total de Viaturas</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center" style="cursor: pointer; transition: 0.3s;">
+                                        <div class="card-body">
+                                            <h3 id="countDisp" class="text-success">0</h3>
+                                            <p>Viaturas Disponíveis</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center" style="cursor: pointer; transition: 0.3s;" onclick="mostrarViaturasEmUso()">
+                                        <div class="card-body">
+                                            <h3 id="countUso" class="text-warning">0</h3>
+                                            <p>Viaturas em Uso</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card text-center" style="cursor: pointer; transition: 0.3s;">
+                                        <div class="card-body">
+                                            <h3 id="countManut" class="text-secondary">0</h3>
+                                            <p>Em Manutenção</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pagina-veiculos" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-car"></i> Gestão de Veículos</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Cadastro de Viatura -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-plus"></i> Cadastrar Nova Viatura</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <select id="selMarca" class="form-control mb-2">
+                                                <option value="">Selecione Marca...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select id="selModelo" class="form-control mb-2">
+                                                <option value="">Selecione Modelo...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <select id="selCor" class="form-control mb-2">
+                                                <option value="">Selecione Cor...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="text" id="placaViatura" class="form-control mb-2" placeholder="Placa">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" id="hodometroViatura" class="form-control mb-2" placeholder="Hodômetro" min="0">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button onclick="cadastrarVeiculo()" class="btn btn-primary w-100">
+                                                <i class="fas fa-save"></i> Cadastrar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cadastro de Marcas -->
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-tag"></i> Cadastrar Marcas de Viaturas</h5>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMarcas" aria-expanded="true" aria-controls="collapseMarcas">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                </div>
+                                <div id="collapseMarcas" class="collapse show">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <input type="text" id="inputMarca" class="form-control mb-2" placeholder="Digite a marca da viatura">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button onclick="cadastrarMarca()" class="btn btn-primary w-100">
+                                                    <i class="fas fa-save"></i> Adicionar Marca
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="listaMarcas" class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cadastro de Modelos -->
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-car"></i> Cadastrar Modelos de Viaturas</h5>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseModelos" aria-expanded="true" aria-controls="collapseModelos">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                </div>
+                                <div id="collapseModelos" class="collapse show">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <input type="text" id="inputModelo" class="form-control mb-2" placeholder="Digite o modelo da viatura">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button onclick="cadastrarModelo()" class="btn btn-primary w-100">
+                                                    <i class="fas fa-save"></i> Adicionar Modelo
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="listaModelos" class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cadastro de Cores -->
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-palette"></i> Cadastrar Cores de Viaturas</h5>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCores" aria-expanded="true" aria-controls="collapseCores">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                </div>
+                                <div id="collapseCores" class="collapse show">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <input type="text" id="inputCor" class="form-control mb-2" placeholder="Digite a cor da viatura">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button onclick="cadastrarCor()" class="btn btn-primary w-100">
+                                                    <i class="fas fa-save"></i> Adicionar Cor
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="listaCores" class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Viaturas -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-list"></i> Viaturas Cadastradas</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="filtro-group mb-3">
+                                        <h6><i class="fas fa-filter"></i> Filtros de Pesquisa</h6>
+                                        <div class="row">
+                                            <div class="col-md-2">
+                                                <select id="filtroStatus" onchange="filtrarViaturas()" class="form-control">
+                                                    <option value="todos">Todas</option>
+                                                    <option value="disponivel">Disponíveis</option>
+                                                    <option value="em uso">Em Uso</option>
+                                                    <option value="em manutencao">Em Manutenção</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <select id="filtroModelo" class="form-control" onchange="filtrarViaturas()">
+                                                    <option value="">Todos os Modelos</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <select id="filtroCor" class="form-control" onchange="filtrarViaturas()">
+                                                    <option value="">Todas as Cores</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input type="text" id="filtroPlaca" class="form-control" placeholder="Placa" oninput="filtrarViaturas()">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button onclick="limparFiltros()" class="btn btn-outline-secondary w-100">
+                                                    <i class="fas fa-times"></i> Limpar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="listaVeiculos"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pagina-motoristas" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-id-card"></i> Gestão de Motoristas</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Cadastro de Motorista -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-plus"></i> Cadastrar Novo Motorista</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <input type="text" id="nomeMotorista" class="form-control mb-2" placeholder="Nome do motorista">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="text" id="cargoMotorista" class="form-control mb-2" placeholder="Cargo">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="text" id="cnhMotorista" class="form-control mb-2" placeholder="CNH">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="text" id="telefoneMotorista" class="form-control mb-2" placeholder="Telefone">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button onclick="cadastrarMotorista()" class="btn btn-primary w-100">
+                                                <i class="fas fa-save"></i> Cadastrar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Motoristas -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-list"></i> Motoristas Cadastrados</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="listaMotoristas"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pagina-servicos" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-tools"></i> Gestão de Serviços e Manutenção</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Abas -->
+                            <ul class="nav nav-tabs mb-4" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="tab-servicos-andamento" data-bs-toggle="tab" href="#servicos-andamento" role="tab">
+                                        <i class="fas fa-wrench"></i> Serviços em Andamento
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="tab-historico-servicos" data-bs-toggle="tab" href="#historico-servicos" role="tab">
+                                        <i class="fas fa-history"></i> Histórico de Serviços
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <!-- Conteúdo das Abas -->
+                            <div class="tab-content">
+                                <!-- Serviços em Andamento -->
+                                <div id="servicos-andamento" class="tab-pane fade show active" role="tabpanel">
+                                    <div id="listaServicosManuencaoAtivos"></div>
+                                </div>
+
+                                <!-- Histórico de Serviços -->
+                                <div id="historico-servicos" class="tab-pane fade" role="tabpanel">
+                                    <div class="filtro-group">
+                                        <h5><i class="fas fa-filter"></i> Filtros de Pesquisa</h5>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label for="filtroDataInicio" class="form-label">Data Inicial</label>
+                                                <input type="date" id="filtroDataInicio" class="form-control" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="filtroDataFinal" class="form-label">Data Final</label>
+                                                <input type="date" id="filtroDataFinal" class="form-control" />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="filtroPlacaHistorico" class="form-label">Placa da Viatura</label>
+                                                <input type="text" id="filtroPlacaHistorico" class="form-control" placeholder="Ex: ABC-1234" />
+                                            </div>
+                                            <div class="col-md-2 d-flex flex-column justify-content-end">
+                                                <button onclick="filtrarHistoricoServicos()" class="btn btn-filtrar w-100 mb-2">
+                                                    <i class="fas fa-search"></i> Filtrar
+                                                </button>
+                                                <button onclick="document.getElementById('filtroDataInicio').value=''; document.getElementById('filtroDataFinal').value=''; document.getElementById('filtroPlacaHistorico').value=''; filtrarHistoricoServicos();" class="btn btn-limpar-filtro w-100">
+                                                    <i class="fas fa-times"></i> Limpar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="listaHistoricoServicos"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pagina-missoes" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-tasks"></i> Gestão de Missões</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Despacho -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-cubes"></i> Vincular Missão (Despacho)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <select id="despachoViatura" class="form-control mb-2">
+                                                <option value="">Selecione Viatura...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select id="despachoMotorista" class="form-control mb-2">
+                                                <option value="">Selecione Motorista...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button onclick="vincularMissao()" class="btn btn-primary w-100">
+                                                <i class="fas fa-link"></i> Vincular
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label>Data de Entrega:</label>
+                                            <input type="date" id="dataEntregaMissao" class="form-control mb-2">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label>Data de Devolução:</label>
+                                            <input type="date" id="dataDevolucaoMissao" class="form-control mb-2">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Missões -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-list"></i> Missões Ativas</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="listaMissoes"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pagina-relatorios" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-file-pdf"></i> Relatórios do Sistema</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Navegação por Abas -->
+                            <ul class="nav nav-tabs" id="relatoriosTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="veiculos-tab" data-bs-toggle="tab" data-bs-target="#veiculos" type="button" role="tab">
+                                        <i class="fas fa-car"></i> Veículos
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="motoristas-tab" data-bs-toggle="tab" data-bs-target="#motoristas" type="button" role="tab">
+                                        <i class="fas fa-id-card"></i> Motoristas
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="servicos-tab" data-bs-toggle="tab" data-bs-target="#servicos" type="button" role="tab">
+                                        <i class="fas fa-tools"></i> Serviços
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="geral-tab" data-bs-toggle="tab" data-bs-target="#geral" type="button" role="tab">
+                                        <i class="fas fa-chart-bar"></i> Geral
+                                    </button>
+                                </li>
+                            </ul>
+
+                            <!-- Conteúdo das Abas -->
+                            <div class="tab-content mt-4" id="relatoriosTabContent">
+
+                                <!-- Aba Veículos -->
+                                <div class="tab-pane fade show active" id="veiculos" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-calendar"></i> Relatório de Uso por Data</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <input type="date" id="filtroDataInicioUso" class="form-control mb-2" placeholder="Data inicial">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <input type="date" id="filtroDataFimUso" class="form-control mb-2" placeholder="Data final">
+                                                        </div>
+                                                    </div>
+                                                    <input type="text" id="filtroPlacaUso" class="form-control mb-2" placeholder="Placa (opcional)">
+                                                    <button onclick="gerarRelatorioUso()" class="btn btn-primary w-100">
+                                                        <i class="fas fa-search"></i> Gerar Relatório
+                                                    </button>
+                                                    <div id="relatorioUso" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-cog"></i> Status dos Veículos</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <button onclick="gerarRelatorioStatusVeiculos()" class="btn btn-info w-100">
+                                                        <i class="fas fa-list"></i> Gerar Relatório de Status
+                                                    </button>
+                                                    <div id="relatorioStatusVeiculos" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-gas-pump"></i> Próximas Trocas de Óleo</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <button onclick="gerarRelatorioTrocaOleo()" class="btn btn-warning w-100">
+                                                        <i class="fas fa-oil-can"></i> Gerar Relatório
+                                                    </button>
+                                                    <div id="relatorioTrocaOleo" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Aba Motoristas -->
+                                <div class="tab-pane fade" id="motoristas" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-user-clock"></i> Atividades dos Motoristas</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <input type="date" id="filtroDataInicioMotorista" class="form-control mb-2" placeholder="Data inicial">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <input type="date" id="filtroDataFimMotorista" class="form-control mb-2" placeholder="Data final">
+                                                        </div>
+                                                    </div>
+                                                    <select id="filtroMotorista" class="form-control mb-2">
+                                                        <option value="">Todos os motoristas</option>
+                                                    </select>
+                                                    <button onclick="gerarRelatorioMotoristas()" class="btn btn-success w-100">
+                                                        <i class="fas fa-users"></i> Gerar Relatório
+                                                    </button>
+                                                    <div id="relatorioMotoristas" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-id-card"></i> Lista de Motoristas</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <button onclick="gerarRelatorioListaMotoristas()" class="btn btn-secondary w-100">
+                                                        <i class="fas fa-list-ul"></i> Gerar Lista Completa
+                                                    </button>
+                                                    <div id="relatorioListaMotoristas" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Aba Serviços -->
+                                <div class="tab-pane fade" id="servicos" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-tools"></i> Histórico de Serviços</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <input type="date" id="filtroDataInicioServicos" class="form-control mb-2" placeholder="Data inicial">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <input type="date" id="filtroDataFimServicos" class="form-control mb-2" placeholder="Data final">
+                                                        </div>
+                                                    </div>
+                                                    <input type="text" id="filtroPlacaServicos" class="form-control mb-2" placeholder="Placa (opcional)">
+                                                    <select id="filtroTipoServico" class="form-control mb-2">
+                                                        <option value="">Todos os tipos</option>
+                                                        <option value="Troca de Óleo">Troca de Óleo</option>
+                                                        <option value="Manutenção">Manutenção</option>
+                                                        <option value="Reparo">Reparo</option>
+                                                        <option value="Inspeção">Inspeção</option>
+                                                        <option value="Outro">Outro</option>
+                                                    </select>
+                                                    <button onclick="gerarRelatorioServicos()" class="btn btn-warning w-100">
+                                                        <i class="fas fa-wrench"></i> Gerar Relatório
+                                                    </button>
+                                                    <div id="relatorioServicos" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-clock"></i> Serviços Pendentes</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <button onclick="gerarRelatorioServicosPendentes()" class="btn btn-danger w-100">
+                                                        <i class="fas fa-exclamation-triangle"></i> Ver Serviços Pendentes
+                                                    </button>
+                                                    <div id="relatorioServicosPendentes" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Aba Geral -->
+                                <div class="tab-pane fade" id="geral" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-chart-pie"></i> Estatísticas Gerais</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <button onclick="gerarRelatorioEstatisticas()" class="btn btn-primary w-100">
+                                                        <i class="fas fa-chart-bar"></i> Gerar Estatísticas
+                                                    </button>
+                                                    <div id="relatorioEstatisticas" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="card mb-4">
+                                                <div class="card-header">
+                                                    <h5><i class="fas fa-file-export"></i> Exportar Dados</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <button onclick="exportarDados()" class="btn btn-success w-100">
+                                                        <i class="fas fa-download"></i> Exportar para JSON
+                                                    </button>
+                                                    <div id="exportStatus" class="mt-3" style="display:none;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pagina-configuracoes" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-cog"></i> Configurações do Sistema</h3>
+                        </div>
+                        <div class="card-body">
+                            <!-- Reset de Usuários -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-users"></i> Gerenciamento de Usuários</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Restaurar os usuários para as credenciais padrão:</p>
+                                    <button onclick="resetarUsuarios()" class="btn btn-warning">
+                                        <i class="fas fa-redo"></i> Resetar Usuários
+                                    </button>
+                                    <hr>
+                                    <h6>Usuários disponíveis após reset:</h6>
+                                    <ul style="list-style: none; padding-left: 0;">
+                                        <li><strong>admin</strong> - Senha: <code>123456</code> (Administrador)</li>
+                                        <li><strong>operador</strong> - Senha: <code>123456</code> (Operador)</li>
+                                        <li><strong>teste</strong> - Senha: <code>123456</code> (Operador)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL CADASTRO ========== -->
+    <div class="modal" id="modalCadastro">
+        <div class="modal-content">
+            <span class="modal-close" onclick="fecharModalCadastro()">&times;</span>
+            <h2>Criar Conta</h2>
+
+            <div id="successMessage" class="success-message"></div>
+            <div id="errorCadastroMessage" class="error-message"></div>
+
+            <form id="cadastroForm" onsubmit="criarConta(event)">
+                <div class="form-group">
+                    <label for="nomeCompleto">Nome Completo</label>
+                    <input type="text" id="nomeCompleto" placeholder="Seu nome" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="usuarioCadastro">Usuário</label>
+                    <input type="text" id="usuarioCadastro" placeholder="Escolha um usuário" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="emailCadastro">Email</label>
+                    <input type="email" id="emailCadastro" placeholder="seu@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="senhaCadastro">Senha</label>
+                    <input type="password" id="senhaCadastro" placeholder="Crie uma senha forte" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="senhaConfirm">Confirmar Senha</label>
+                    <input type="password" id="senhaConfirm" placeholder="Repita a senha" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="cargoSelect">Cargo (Permissões)</label>
+                    <select id="cargoSelect" required>
+                        <option value="">Selecione um cargo</option>
+                        <option value="admin">Administrador</option>
+                        <option value="operador">Operador</option>
+                        <option value="visualizador">Visualizador (Leitura)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-user-plus"></i> Cadastrar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========== MODAL RECUPERAR SENHA ========== -->
+    <div class="modal" id="modalRecuperarSenha">
+        <div class="modal-content">
+            <span class="modal-close" onclick="fecharModalRecuperarSenha()">&times;</span>
+            <h2>Recuperar Senha</h2>
+
+            <div id="errorRecuperarMessage" class="error-message"></div>
+            <div id="successRecuperarMessage" class="success-message"></div>
+
+            <form id="recuperarForm" onsubmit="enviarCodigoRecuperacao(event)">
+                <div class="form-group">
+                    <label for="emailRecuperar">Email ou Usuário</label>
+                    <input type="text" id="emailRecuperar" placeholder="Seu email ou usuário" required>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-envelope"></i> Enviar Código
+                </button>
+            </form>
+
+            <div id="formularioCodigoRecuperacao" style="display:none;">
+                <form id="codigoRecuperacaoForm" onsubmit="validarCodigoRecuperacao(event)">
+                    <div class="form-group">
+                        <label for="codigoRecuperacao">Código de Recuperação</label>
+                        <input type="text" id="codigoRecuperacao" placeholder="Digite o código recebido" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="novaSenha">Nova Senha</label>
+                        <input type="password" id="novaSenha" placeholder="Crie uma nova senha" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmaNovaSenha">Confirmar Senha</label>
+                        <input type="password" id="confirmaNovaSenha" placeholder="Repita a senha" required>
+                    </div>
+
+                    <button type="submit" class="btn-login">
+                        <i class="fas fa-check"></i> Alterar Senha
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL TIMEOUT DE SESSÃO ========== -->
+    <div class="modal" id="modalTimeout">
+        <div class="modal-content" style="text-align: center; max-width: 400px;">
+            <h2><i class="fas fa-hourglass-end" style="color: var(--alerta);"></i></h2>
+            <h3>Sessão Expirada</h3>
+            <p>Sua sessão expirou por inatividade.</p>
+            <p>Tempo restante: <strong id="tempoRestante">60</strong>s</p>
+
+            <button onclick="prolongarSessao()" class="btn-login" style="margin-bottom: 10px;">
+                <i class="fas fa-clock"></i> Permanecer Logado
+            </button>
+            <button onclick="fazerLogout()" class="btn" style="background: var(--alerta); color: white; width: 100%;">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Toggle dos ícones dos botões de collapse
+        document.addEventListener('DOMContentLoaded', function() {
+            const collapses = ['collapseMarcas', 'collapseModelos', 'collapseCores'];
+            
+            collapses.forEach(id => {
+                const collapseEl = document.getElementById(id);
+                const button = document.querySelector(`[data-bs-target="#${id}"] i`);
+                
+                if (collapseEl && button) {
+                    collapseEl.addEventListener('shown.bs.collapse', function() {
+                        button.className = 'fas fa-chevron-up';
+                    });
+                    collapseEl.addEventListener('hidden.bs.collapse', function() {
+                        button.className = 'fas fa-chevron-down';
+                    });
+                }
+            });
+        });
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>
