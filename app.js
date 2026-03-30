@@ -490,6 +490,12 @@ function validarCodigoRecuperacao(event) {
 
 // ================= INICIALIZAÇÃO =================
 function abrirPagina(pagina) {
+    if (!sessaoAtual) {
+        alert('É necessário efetuar o login para acessar o sistema.');
+        mostrarLogin();
+        return;
+    }
+
     // Verificar permissão
     const permissaoMapa = {
         'home': 'visualizar_dashboard',
