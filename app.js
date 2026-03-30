@@ -286,6 +286,16 @@ function fazerLogout() {
 }
 
 // ================= MOSTRAR/OCULTAR TELAS =================
+function toggleSidebar() {
+    const sidebar = document.querySelector('nav.sidebar');
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed');
+}
+
+function toggleMobileSidebar() {
+    document.body.classList.toggle('sidebar-open');
+}
+
 function mostrarDashboard() {
     document.getElementById("loginContainer").classList.add("hidden");
     document.getElementById("dashboard").classList.add("active");
