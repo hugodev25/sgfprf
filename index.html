@@ -854,18 +854,18 @@
             nav.sidebar {
                 position: fixed;
                 top: 0;
-                left: -100%;
+                left: 0;
                 width: 240px;
                 height: 100vh;
                 z-index: 999;
                 transform: translateX(-100%);
                 transition: transform 0.25s ease;
                 overflow-y: auto;
+                width: 240px;
             }
 
             body.sidebar-open nav.sidebar {
                 transform: translateX(0);
-                left: 0;
             }
 
             .main-container {
@@ -882,7 +882,30 @@
             }
 
             nav.sidebar:hover {
-                width: 240px;
+                transform: translateX(0);
+            }
+
+            nav.sidebar .nav-item i {
+                font-size: 18px;
+            }
+
+            nav.sidebar .nav-item .nav-text {
+                opacity: 1;
+                visibility: visible;
+                width: auto;
+            }
+
+            .login-header .logo {
+                width: 70px;
+                height: 70px;
+            }
+
+            .login-header h1 {
+                font-size: 22px;
+            }
+
+            .login-header p {
+                font-size: 13px;
             }
         }
 
