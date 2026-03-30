@@ -359,11 +359,46 @@
         }
 
         nav.sidebar {
-            width: 240px;
+            width: 70px;
             background: rgba(11,61,145,0.95);
             padding-top: 20px;
-            overflow-y: auto;
+            overflow-y: hidden;
             box-shadow: 2px 0 16px rgba(0,0,0,0.25);
+            transition: width 0.2s ease, overflow 0.2s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        nav.sidebar:hover {
+            width: 240px;
+            overflow-y: auto;
+        }
+
+        nav.sidebar .nav-item i {
+            min-width: 20px;
+            text-align: center;
+        }
+
+        nav.sidebar .nav-item .nav-text {
+            display: inline-block;
+            margin-left: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            width: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, width 0.2s ease;
+        }
+
+        nav.sidebar:hover .nav-item .nav-text {
+            opacity: 1;
+            width: auto;
+            visibility: visible;
+        }
+
+        nav.sidebar.collapsed .nav-item .nav-text {
+            opacity: 0;
+            width: 0;
+            visibility: hidden;
         }
 
         .nav-item {
@@ -819,25 +854,25 @@
         <div class="main-container">
             <nav class="sidebar">
                 <div class="nav-item active" onclick="abrirPagina('home')">
-                    <i class="fas fa-home"></i> Início
+                    <i class="fas fa-home"></i><span class="nav-text">Início</span>
                 </div>
                 <div class="nav-item" onclick="abrirPagina('veiculos')">
-                    <i class="fas fa-car"></i> Veículos
+                    <i class="fas fa-car"></i><span class="nav-text">Veículos</span>
                 </div>
                 <div class="nav-item" onclick="abrirPagina('motoristas')">
-                    <i class="fas fa-id-card"></i> Motoristas
+                    <i class="fas fa-id-card"></i><span class="nav-text">Motoristas</span>
                 </div>
                 <div class="nav-item" onclick="abrirPagina('servicos')">
-                    <i class="fas fa-tools"></i> Serviços
+                    <i class="fas fa-tools"></i><span class="nav-text">Serviços</span>
                 </div>
                 <div class="nav-item" onclick="abrirPagina('missoes')">
-                    <i class="fas fa-tasks"></i> Missões
+                    <i class="fas fa-tasks"></i><span class="nav-text">Missões</span>
                 </div>
                 <div class="nav-item" onclick="abrirPagina('relatorios')">
-                    <i class="fas fa-file-pdf"></i> Relatórios
+                    <i class="fas fa-file-pdf"></i><span class="nav-text">Relatórios</span>
                 </div>
                 <div class="nav-item" onclick="abrirPagina('configuracoes')">
-                    <i class="fas fa-cog"></i> Configurações
+                    <i class="fas fa-cog"></i><span class="nav-text">Configurações</span>
                 </div>
             </nav>
 
