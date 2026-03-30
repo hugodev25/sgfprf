@@ -538,6 +538,11 @@ function abrirPagina(pagina) {
         pagElement.style.display = "block";
     }
 
+    // Corrige toque em mobile: fecha menu lateral ao navegar
+    if (document.body.classList.contains('sidebar-open')) {
+        document.body.classList.remove('sidebar-open');
+    }
+
     // Carregar dados específicos da página
     if (pagina === 'missoes') {
         renderSelectViaturas();
