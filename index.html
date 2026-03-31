@@ -41,7 +41,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('./back.jpg');
+            background-image: url('./imagens/back.jpg');
             background-size: cover;
             background-position: center;
             opacity: 0.1;
@@ -359,46 +359,11 @@
         }
 
         nav.sidebar {
-            width: 70px;
+            width: 240px;
             background: rgba(11,61,145,0.95);
             padding-top: 20px;
-            overflow-y: hidden;
-            box-shadow: 2px 0 16px rgba(0,0,0,0.25);
-            transition: width 0.2s ease, overflow 0.2s ease;
-            position: relative;
-            z-index: 2;
-        }
-
-        nav.sidebar:hover {
-            width: 240px;
             overflow-y: auto;
-        }
-
-        nav.sidebar .nav-item i {
-            min-width: 20px;
-            text-align: center;
-        }
-
-        nav.sidebar .nav-item .nav-text {
-            display: inline-block;
-            margin-left: 8px;
-            white-space: nowrap;
-            opacity: 0;
-            width: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease, width 0.2s ease;
-        }
-
-        nav.sidebar:hover .nav-item .nav-text {
-            opacity: 1;
-            width: auto;
-            visibility: visible;
-        }
-
-        nav.sidebar.collapsed .nav-item .nav-text {
-            opacity: 0;
-            width: 0;
-            visibility: hidden;
+            box-shadow: 2px 0 16px rgba(0,0,0,0.25);
         }
 
         .nav-item {
@@ -436,7 +401,7 @@
         /* CONTEÚDO */
         .content {
             flex: 1;
-            background: rgba(233, 236, 239, 0.5) url('./back.jpg') no-repeat center/cover;
+            background: rgba(233, 236, 239, 0.5) url('./imagens/back.jpg') no-repeat center/cover;
             padding: 25px;
             overflow-y: auto;
         }
@@ -781,7 +746,7 @@
     <div class="login-box">
         <div class="login-header">
             <div class="logo">
-                <img src="./logoprf.webp" alt="Logo PRF" style="width: 270px;">
+                <img src="./imagens/logoprf.webp" alt="Logo PRF" style="width: 270px;">
             </div>
             <h1>SGF PRF</h1>
             <p>Sistema de Gestão de Frotas</p>
@@ -837,7 +802,7 @@
 <div class="dashboard" id="dashboard">
     <header>
         <div class="logo-area">
-            <img src="./logodir.png" 
+            <img src="./imagens/logodir.png" 
                  alt="Logo PRF" 
                  style="width:200px; height:150px; object-fit:contain;">
             <h2>SGF - Sistema de Gestão de Frotas</h2>
@@ -854,25 +819,25 @@
         <div class="main-container">
             <nav class="sidebar">
                 <div class="nav-item active" onclick="abrirPagina('home')">
-                    <i class="fas fa-home"></i><span class="nav-text">Início</span>
+                    <i class="fas fa-home"></i> Início
                 </div>
                 <div class="nav-item" onclick="abrirPagina('veiculos')">
-                    <i class="fas fa-car"></i><span class="nav-text">Veículos</span>
+                    <i class="fas fa-car"></i> Veículos
                 </div>
                 <div class="nav-item" onclick="abrirPagina('motoristas')">
-                    <i class="fas fa-id-card"></i><span class="nav-text">Motoristas</span>
+                    <i class="fas fa-id-card"></i> Motoristas
                 </div>
                 <div class="nav-item" onclick="abrirPagina('servicos')">
-                    <i class="fas fa-tools"></i><span class="nav-text">Serviços</span>
+                    <i class="fas fa-tools"></i> Serviços
                 </div>
                 <div class="nav-item" onclick="abrirPagina('missoes')">
-                    <i class="fas fa-tasks"></i><span class="nav-text">Missões</span>
+                    <i class="fas fa-tasks"></i> Missões
                 </div>
                 <div class="nav-item" onclick="abrirPagina('relatorios')">
-                    <i class="fas fa-file-pdf"></i><span class="nav-text">Relatórios</span>
+                    <i class="fas fa-file-pdf"></i> Relatórios
                 </div>
                 <div class="nav-item" onclick="abrirPagina('configuracoes')">
-                    <i class="fas fa-cog"></i><span class="nav-text">Configurações</span>
+                    <i class="fas fa-cog"></i> Configurações
                 </div>
             </nav>
 
