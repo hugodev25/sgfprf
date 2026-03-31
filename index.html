@@ -58,7 +58,7 @@
         }
 
         img, video, svg {
-            max-width: 0%;
+            max-width: 100%;
             height: auto;
         }
 
@@ -72,7 +72,7 @@
 
         .login-box {
             background: white;
-            border-radius: 50px;
+            border-radius: 10px;
             box-shadow: 0 10px 40px rgba(0, 34, 68, 0.3);
             width: 100%;
             max-width: 420px;
@@ -97,23 +97,15 @@
         }
 
         .login-header .logo {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             background: linear-gradient(135deg, var(--prf-azul) 0%, var(--prf-azul-claro) 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 50px;
+            margin: 0 auto 20px;
             box-shadow: 0 5px 15px rgba(0, 34, 68, 0.2);
-            overflow: hidden;
-        }
-
-        .login-header .logo img {
-            max-width: 80px;
-            height: auto;
-            border-radius: 50%;
-            object-fit: contain;
         }
 
         .login-header .logo i {
@@ -903,15 +895,8 @@
             }
 
             .login-header .logo {
-                width:200px;
-                height: 100px;
-            }
-
-            .login-header .logo img {
-                max-width: 250px;
-                height: auto;
-                border-radius: 50%;
-                object-fit: contain;
+                width: 90px;
+                height: 70px;
             }
 
             .login-header h1 {
@@ -941,7 +926,7 @@
     <div class="login-box">
         <div class="login-header">
             <div class="logo">
-                <img src="./imagens/logoprf.webp" alt="Logo PRF">
+                <img src="./logoprf.webp" alt="Logo PRF" style="width: 270px;">
             </div>
             <h1>SGF PRF</h1>
             <p>Sistema de Gestão de Frotas</p>
