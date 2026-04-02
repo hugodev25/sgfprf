@@ -982,7 +982,7 @@ function renderMotoristas() {
                 
                 <div style="margin-bottom: 10px;">
                     <label><strong>CNH:</strong></label>
-                    <input type="text" id="cnhMotorista${i}" value="${m.cnh}" 
+                    <input type="text" id="matriculaMotorista${i}" value="${m.cnh}" 
                            class="form-control" style="margin-bottom: 5px;" placeholder="CNH" ${!emEdicao ? 'disabled' : ''}>
                 </div>
                 
