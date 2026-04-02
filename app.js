@@ -692,19 +692,19 @@ function cadastrarCor() {
 function cadastrarMotorista() {
     const nome = document.getElementById("nomeMotorista")?.value.trim();
     const cargo = document.getElementById("cargoMotorista")?.value.trim();
-    const cnh = document.getElementById("cnhMotorista")?.value.trim();
+    const matricula = document.getElementById("matriculaMotorista")?.value.trim();
     const tel = document.getElementById("telefoneMotorista")?.value.trim();
 
     if (!nome || !cnh) return alert("Nome e CNH são obrigatórios!");
 
-    db.motoristas.push({ nome, cargo, cnh, telefone: tel });
+    db.motoristas.push({ nome, cargo, matricula, telefone: tel });
 
     limparCamposMotorista();
     salvarDb();
 }
 
 function limparCamposMotorista() {
-    ["nomeMotorista", "cargoMotorista", "cnhMotorista", "telefoneMotorista"]
+    ["nomeMotorista", "cargoMotorista", "matriculaMotorista", "telefoneMotorista"]
         .forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = "";
