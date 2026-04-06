@@ -721,9 +721,9 @@ function cadastrarVeiculo() {
 
     if (!selMarca || !selModelo || !placaInput) return;
 
-    const marca = db.marcas[selMarca.value];
-    const modelo = db.modelos[selModelo.value];
-    const cor = selCor ? db.cores[selCor.value] : null;
+    const marca = selMarca.value;
+    const modelo = selModelo.value;
+    const cor = selCor ? selCor.value : null;
     const placa = placaInput.value.toUpperCase().trim();
     const hodometro = hodometroInput ? parseInt(hodometroInput.value) || 0 : 0;
 
