@@ -695,7 +695,7 @@ function cadastrarMotorista() {
     const matricula = document.getElementById("matriculaMotorista")?.value.trim();
     const tel = document.getElementById("telefoneMotorista")?.value.trim();
 
-    if (!nome || !cnh) return alert("Nome e CNH são obrigatórios!");
+    if (!nome || !cnh) return alert("Nome e Matricula são obrigatórios!");
 
     db.motoristas.push({ nome, cargo, matricula, telefone: tel });
 
@@ -981,7 +981,7 @@ function renderMotoristas() {
                 </div>
                 
                 <div style="margin-bottom: 10px;">
-                    <label><strong>CNH:</strong></label>
+                    <label><strong>matricula:</strong></label>
                     <input type="text" id="matriculaMotorista${i}" value="${m.cnh}" 
                            class="form-control" style="margin-bottom: 5px;" placeholder="CNH" ${!emEdicao ? 'disabled' : ''}>
                 </div>
