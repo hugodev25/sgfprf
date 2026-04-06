@@ -68,7 +68,7 @@ function criarUsuariosPadrao() {
             usuario: "teste",
             senha: criptografarSenha("123456"),
             email: "teste@prf.gov.br",
-            cargo: "operador",
+            cargo: "visualizador",
             ativo: true,
             dataCadastro: new Date().toISOString()
         }
