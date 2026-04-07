@@ -133,7 +133,6 @@ function compararSenhas(senhaDigitada, senhaCriptografada) {
 }
 
 // ================= USUÁRIOS E AUTENTICAÇÃO =================
-let usuarios = null;
 let sessaoAtual = JSON.parse(localStorage.getItem(AUTH_KEYS.sessao)) || null;
 
 // ================= RESETAR USUÁRIOS =================
@@ -141,10 +140,11 @@ function resetarUsuarios() {
     if (!confirm("Deseja resetar os usuários para os padrões?\n\nIsto restaurará:\n- admin / 123456\n- operador / 123456\n- teste / 123456")) return;
     
     criarUsuariosPadrao();
+    salvarDb();
     alert("Usuários restaurados com sucesso!\n\nCredenciais disponíveis:\n- usuario: admin | senha: 123456\n- usuario: operador | senha: 123456\n- usuario: teste | senha: 123456");
 }
 function criarUsuariosPadrao() {
-    usuarios = [
+    db.usuarios = [
         {
             id: 1,
             nome: "Admin",
@@ -176,13 +176,10 @@ function criarUsuariosPadrao() {
             dataCadastro: new Date().toISOString()
         }
     ];
-    localStorage.setItem(AUTH_KEYS.usuarios, JSON.stringify(usuarios));
 }
 
 function inicializarUsuarios() {
-    usuarios = JSON.parse(localStorage.getItem(AUTH_KEYS.usuarios));
-    
-    if (!usuarios || !Array.isArray(usuarios) || usuarios.length === 0) {
+    if (!Array.isArray(db.usuarios) || db.usuarios.length === 0) {
         criarUsuariosPadrao();
     }
 }
@@ -225,7 +222,7 @@ const PERMISSOES = {
 function temPermissao(permissao) {
     if (!sessaoAtual) return false;
     
-    const usuarioAtual = usuarios.find(u => u.id === sessaoAtual.id);
+    const usuarioAtual = db.usuarios.find(u => u.id === sessaoAtual.id);
     if (!usuarioAtual) return false;
     
     const perms = PERMISSOES[usuarioAtual.cargo] || [];
@@ -341,7 +338,7 @@ function fazerLogin(event) {
     btnLogin.disabled = true;
 
     setTimeout(() => {
-        const usuarioEncontrado = usuarios.find(
+        const usuarioEncontrado = db.usuarios.find(
             u => u.usuario === usuario && compararSenhas(senha, u.senha) && u.ativo
         );
 
@@ -460,13 +457,13 @@ function criarConta(event) {
         return;
     }
 
-    if (usuarios.some(u => u.usuario === usuario)) {
+    if (db.usuarios.some(u => u.usuario === usuario)) {
         errorDiv.innerHTML = "<i class='fas fa-exclamation-circle'></i> Este usuário já existe!";
         errorDiv.classList.add("show");
         return;
     }
 
-    if (usuarios.some(u => u.email === email)) {
+    if (db.usuarios.some(u => u.email === email)) {
         errorDiv.innerHTML = "<i class='fas fa-exclamation-circle'></i> Este email já está cadastrado!";
         errorDiv.classList.add("show");
         return;
@@ -474,7 +471,7 @@ function criarConta(event) {
 
     // Criar novo usuário
     const novoUsuario = {
-        id: Math.max(...usuarios.map(u => u.id), 0) + 1,
+        id: Math.max(...db.usuarios.map(u => u.id), 0) + 1,
         nome: nome,
         usuario: usuario,
         senha: criptografarSenha(senha),
@@ -484,8 +481,8 @@ function criarConta(event) {
         dataCadastro: new Date().toISOString()
     };
 
-    usuarios.push(novoUsuario);
-    localStorage.setItem(AUTH_KEYS.usuarios, JSON.stringify(usuarios));
+    db.usuarios.push(novoUsuario);
+    salvarDb();
 
     successDiv.innerHTML = "<i class='fas fa-check-circle'></i> Conta criada com sucesso! Faça login agora.";
     successDiv.classList.add("show");
@@ -528,7 +525,7 @@ function enviarCodigoRecuperacao(event) {
     successDiv.classList.remove("show");
 
     // Procurar usuário por email ou usuário
-    const usuarioEncontrado = usuarios.find(
+    const usuarioEncontrado = db.usuarios.find(
         u => u.email === input || u.usuario === input
     );
 
@@ -587,10 +584,10 @@ function validarCodigoRecuperacao(event) {
     }
 
     // Atualizar senha do usuário
-    const usuarioRecuperacao = usuarios.find(u => u.email === emailRecuperacao);
+    const usuarioRecuperacao = db.usuarios.find(u => u.email === emailRecuperacao);
     if (usuarioRecuperacao) {
         usuarioRecuperacao.senha = criptografarSenha(novaSenha);
-        localStorage.setItem(AUTH_KEYS.usuarios, JSON.stringify(usuarios));
+        salvarDb();
 
         successDiv.innerHTML = "<i class='fas fa-check-circle'></i> Senha alterada com sucesso! Faça login.";
         successDiv.classList.add("show");
@@ -697,7 +694,8 @@ function atualizarVisibilidadeMenu() {
     });
 }
 
-function inicializarApp() {
+async function inicializarApp() {
+    await carregarDadosFirestore();
     inicializarUsuarios();
     
     // Diagnóstico automático
@@ -748,6 +746,7 @@ if (!verificarLocalStorageDisponivel()) {
 // Para sincronizar entre navegadores ou computadores diferentes,
 // é necessário implementar um backend ou serviço de nuvem.
 const DB_KEYS = {
+    usuarios: "prf_usuarios",
     marcas: "prf_marcas",
     modelos: "prf_modelos",
     cores: "prf_cores",
@@ -757,6 +756,9 @@ const DB_KEYS = {
     servicos: "prf_servicos",
     servicosVeiculo: "prf_servicos_veiculo"
 };
+
+const FIRESTORE_STATE_COLLECTION = "appState";
+const FIRESTORE_STATE_DOC = "default";
 
 // Função para carregar dados de forma segura do localStorage
 function carregarDadosLocalstorage() {
@@ -782,6 +784,7 @@ function carregarDadosLocalstorage() {
 }
 
 let db = {
+    usuarios: [],
     marcas: [],
     modelos: [],
     cores: [],
@@ -792,28 +795,80 @@ let db = {
     servicosVeiculo: []
 };
 
-// Carregar dados ao inicializar
+// Carregar dados ao inicializar (fallback local enquanto Firestore sincroniza)
 Object.assign(db, carregarDadosLocalstorage());
 
-function salvar() {
+async function carregarDadosFirestore() {
+    if (typeof window.db === 'undefined') {
+        console.warn("Firestore ainda não foi inicializado.");
+        return;
+    }
+
     try {
-        Object.keys(DB_KEYS).forEach(key => {
-            const valor = JSON.stringify(db[key]);
-            localStorage.setItem(DB_KEYS[key], valor);
-        });
-        console.log("✅ Dados salvos com sucesso no localStorage");
+        const stateRef = doc(window.db, FIRESTORE_STATE_COLLECTION, FIRESTORE_STATE_DOC);
+        const snapshot = await getDoc(stateRef);
+
+        if (snapshot.exists()) {
+            const data = snapshot.data();
+            db.usuarios = Array.isArray(data.usuarios) ? data.usuarios : [];
+            db.marcas = Array.isArray(data.marcas) ? data.marcas : [];
+            db.modelos = Array.isArray(data.modelos) ? data.modelos : [];
+            db.cores = Array.isArray(data.cores) ? data.cores : [];
+            db.motoristas = Array.isArray(data.motoristas) ? data.motoristas : [];
+            db.veiculos = Array.isArray(data.veiculos) ? data.veiculos : [];
+            db.missoes = Array.isArray(data.missoes) ? data.missoes : [];
+            db.servicos = Array.isArray(data.servicos) ? data.servicos : [];
+            db.servicosVeiculo = Array.isArray(data.servicosVeiculo) ? data.servicosVeiculo : [];
+
+            console.log("✅ Dados carregados do Firestore");
+        } else {
+            console.log("ℹ️ Documento do Firestore não existe. Criando base de dados no Firestore.");
+            if (!Array.isArray(db.usuarios) || db.usuarios.length === 0) {
+                criarUsuariosPadrao();
+            }
+            await salvarFirestore();
+        }
+    } catch (error) {
+        console.error("❌ Erro ao carregar dados do Firestore:", error);
+        alert("Erro ao carregar dados do Firestore. Verifique o console.");
+    }
+}
+
+async function salvarFirestore() {
+    if (typeof window.db === 'undefined') {
+        console.warn("Firestore ainda não foi inicializado.");
+        return false;
+    }
+
+    try {
+        const stateRef = doc(window.db, FIRESTORE_STATE_COLLECTION, FIRESTORE_STATE_DOC);
+        await setDoc(stateRef, {
+            usuarios: db.usuarios,
+            marcas: db.marcas,
+            modelos: db.modelos,
+            cores: db.cores,
+            motoristas: db.motoristas,
+            veiculos: db.veiculos,
+            missoes: db.missoes,
+            servicos: db.servicos,
+            servicosVeiculo: db.servicosVeiculo
+        }, { merge: true });
+
+        console.log("✅ Dados salvos com sucesso no Firestore");
         return true;
     } catch (error) {
-        console.error("❌ Erro ao salvar dados:", error);
-        alert("⚠️ Erro ao salvar dados! Verifique o console para mais detalhes.");
+        console.error("❌ Erro ao salvar dados no Firestore:", error);
+        alert("⚠️ Erro ao salvar dados no Firestore! Verifique o console.");
         return false;
     }
 }
 
 function salvarDb() {
-    if (salvar()) {
-        renderizar();
-    }
+    salvarFirestore().then(success => {
+        if (success) {
+            renderizar();
+        }
+    });
 }
 
 // Função de diagnóstico
@@ -1052,8 +1107,7 @@ async function cadastrarVeiculo() {
 
     placaInput.value = "";
     if (hodometroInput) hodometroInput.value = "";
-    await salvarVeiculo(veiculo);
-    renderizar();
+    salvarDb();
 }
 
 // ================= VÍNCULO DE MISSÕES =================
@@ -2972,8 +3026,7 @@ function inicializarRelatorios() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    inicializarApp();
+document.addEventListener('DOMContentLoaded', async function() {
+    await inicializarApp();
     inicializarRelatorios();
-    iniciar();
 });
