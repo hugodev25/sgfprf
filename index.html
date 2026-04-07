@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-      import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+      import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDDINkRqSPPrawykih6YiSFleT-0UJKLJk",
@@ -29,6 +29,9 @@
       window.collection = collection;
       window.addDoc = addDoc;
       window.getDocs = getDocs;
+      window.updateDoc = updateDoc;
+      window.doc = doc;
+      window.deleteDoc = deleteDoc;
     </script>
     <style>
         :root {
