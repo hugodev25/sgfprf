@@ -18,54 +18,81 @@ let estadoEdicao = {
 
 // ================= MENU MOBILE =================
 function toggleMenuMobile() {
+    console.log("🍔 Clicou no hambúrguer");
+    
     const sidebar = document.querySelector('nav.sidebar');
-    const mainContainer = document.querySelector('.main-container');
+    const overlay = document.getElementById('mobileOverlay');
     const btnHamburguer = document.getElementById('btnHamburguer');
     
-    if (sidebar) {
-        sidebar.classList.toggle('mobile-open');
-        mainContainer.classList.toggle('menu-open');
-        
-        // Animar ícone do hamburger
-        if (sidebar.classList.contains('mobile-open')) {
-            btnHamburguer.innerHTML = '<i class="fas fa-times"></i>';
-        } else {
-            btnHamburguer.innerHTML = '<i class="fas fa-bars"></i>';
-        }
+    if (!sidebar || !overlay || !btnHamburguer) {
+        console.error("❌ Elementos não encontrados:", {
+            sidebar: !!sidebar,
+            overlay: !!overlay,
+            btnHamburguer: !!btnHamburguer
+        });
+        return;
+    }
+    
+    console.log("📱 Estado antes:", {
+        menuAbierto: sidebar.classList.contains('mobile-open')
+    });
+    
+    const isOpen = sidebar.classList.contains('mobile-open');
+    
+    if (isOpen) {
+        // Fechar menu
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('visible');
+        btnHamburguer.innerHTML = '<i class="fas fa-bars"></i>';
+        console.log("✅ Menu fechado");
+    } else {
+        // Abrir menu
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('visible');
+        btnHamburguer.innerHTML = '<i class="fas fa-times"></i>';
+        console.log("✅ Menu aberto");
+    }
+}
+
+function fecharMenuMobile() {
+    console.log("📱 Fechando menu (clicou no overlay)");
+    
+    const sidebar = document.querySelector('nav.sidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    const btnHamburguer = document.getElementById('btnHamburguer');
+    
+    if (sidebar && overlay && btnHamburguer) {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('visible');
+        btnHamburguer.innerHTML = '<i class="fas fa-bars"></i>';
     }
 }
 
 // Fechar menu ao clicar em um item de navegação
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("🔄 Inicializando listeners do menu mobile");
+    
     const navItems = document.querySelectorAll('nav.sidebar .nav-item');
-    navItems.forEach(item => {
+    console.log(`Encontrados ${navItems.length} itens de navegação`);
+    
+    navItems.forEach((item, idx) => {
         item.addEventListener('click', function() {
+            console.log(`Clicou no item ${idx}`);
+            
             const sidebar = document.querySelector('nav.sidebar');
-            const mainContainer = document.querySelector('.main-container');
+            const overlay = document.getElementById('mobileOverlay');
             const btnHamburguer = document.getElementById('btnHamburguer');
             
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 768 && sidebar && overlay && btnHamburguer) {
+                console.log("📱 Fechando menu em mobile");
                 sidebar.classList.remove('mobile-open');
-                mainContainer.classList.remove('menu-open');
+                overlay.classList.remove('visible');
                 btnHamburguer.innerHTML = '<i class="fas fa-bars"></i>';
             }
         });
     });
-
-    // Fechar menu ao clicar no overlay
-    const mainContainer = document.querySelector('.main-container');
-    mainContainer.addEventListener('click', function(e) {
-        if (e.target === mainContainer) {
-            const sidebar = document.querySelector('nav.sidebar');
-            const btnHamburguer = document.getElementById('btnHamburguer');
-            
-            if (sidebar.classList.contains('mobile-open')) {
-                sidebar.classList.remove('mobile-open');
-                mainContainer.classList.remove('menu-open');
-                btnHamburguer.innerHTML = '<i class="fas fa-bars"></i>';
-            }
-        }
-    });
+    
+    console.log("✅ Menu mobile inicializado");
 });
 
 // ================= CRIPTOGRAFIA =================
