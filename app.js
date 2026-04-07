@@ -16,6 +16,58 @@ let estadoEdicao = {
     motoristaEmEdicao: null // índice do motorista em edição
 };
 
+// ================= MENU MOBILE =================
+function toggleMenuMobile() {
+    const sidebar = document.querySelector('nav.sidebar');
+    const mainContainer = document.querySelector('.main-container');
+    const btnHamburguer = document.getElementById('btnHamburguer');
+    
+    if (sidebar) {
+        sidebar.classList.toggle('mobile-open');
+        mainContainer.classList.toggle('menu-open');
+        
+        // Animar ícone do hamburger
+        if (sidebar.classList.contains('mobile-open')) {
+            btnHamburguer.innerHTML = '<i class="fas fa-times"></i>';
+        } else {
+            btnHamburguer.innerHTML = '<i class="fas fa-bars"></i>';
+        }
+    }
+}
+
+// Fechar menu ao clicar em um item de navegação
+document.addEventListener('DOMContentLoaded', function() {
+    const navItems = document.querySelectorAll('nav.sidebar .nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const sidebar = document.querySelector('nav.sidebar');
+            const mainContainer = document.querySelector('.main-container');
+            const btnHamburguer = document.getElementById('btnHamburguer');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('mobile-open');
+                mainContainer.classList.remove('menu-open');
+                btnHamburguer.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        });
+    });
+
+    // Fechar menu ao clicar no overlay
+    const mainContainer = document.querySelector('.main-container');
+    mainContainer.addEventListener('click', function(e) {
+        if (e.target === mainContainer) {
+            const sidebar = document.querySelector('nav.sidebar');
+            const btnHamburguer = document.getElementById('btnHamburguer');
+            
+            if (sidebar.classList.contains('mobile-open')) {
+                sidebar.classList.remove('mobile-open');
+                mainContainer.classList.remove('menu-open');
+                btnHamburguer.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        }
+    });
+});
+
 // ================= CRIPTOGRAFIA =================
 function criptografarSenha(senha) {
     if (typeof CryptoJS === 'undefined') {
@@ -597,6 +649,10 @@ function atualizarVisibilidadeMenu() {
 function inicializarApp() {
     inicializarUsuarios();
     
+    // Diagnóstico automático
+    console.log("🔄 Inicializando aplicação...");
+    diagnosticarBancoDados();
+    
     if (sessaoAtual) {
         mostrarDashboard();
         atualizarVisibilidadeMenu();
@@ -613,6 +669,27 @@ function inicializarApp() {
     }
 }
 
+// ================= VERIFICAÇÃO DE LOCALSTORAGE =================
+function verificarLocalStorageDisponivel() {
+    try {
+        const teste = '__test__';
+        localStorage.setItem(teste, teste);
+        localStorage.removeItem(teste);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+if (!verificarLocalStorageDisponivel()) {
+    console.error("❌ ERRO CRÍTICO: localStorage não está disponível!");
+    console.error("Isso pode ocorrer se:");
+    console.error("- O navegador está em modo privado/incógnito");
+    console.error("- O localStorage foi desabilitado nas configurações");
+    console.error("- O arquivo está sendo aberto localmente (file://) sem servidor");
+    alert("❌ ERRO: localStorage não está disponível.\n\nVerifique se:\n- Você não está em modo privado\n- O armazenamento está habilitado\n- O site está sendo acessado via HTTP/HTTPS (não file://)");
+}
+
 // ================= BANCO DE DADOS =================
 const DB_KEYS = {
     marcas: "prf_marcas",
@@ -625,26 +702,203 @@ const DB_KEYS = {
     servicosVeiculo: "prf_servicos_veiculo"
 };
 
+// Função para carregar dados de forma segura do localStorage
+function carregarDadosLocalstorage() {
+    const dados = {};
+    
+    Object.keys(DB_KEYS).forEach(key => {
+        try {
+            const valor = localStorage.getItem(DB_KEYS[key]);
+            dados[key] = valor ? JSON.parse(valor) : [];
+            
+            // Validar se é um array
+            if (!Array.isArray(dados[key])) {
+                console.warn(`⚠️ ${DB_KEYS[key]} não é um array. Resetando...`);
+                dados[key] = [];
+            }
+        } catch (error) {
+            console.error(`❌ Erro ao carregar ${DB_KEYS[key]}:`, error);
+            dados[key] = [];
+        }
+    });
+    
+    return dados;
+}
+
 let db = {
-    marcas: JSON.parse(localStorage.getItem(DB_KEYS.marcas)) || [],
-    modelos: JSON.parse(localStorage.getItem(DB_KEYS.modelos)) || [],
-    cores: JSON.parse(localStorage.getItem(DB_KEYS.cores)) || [],
-    motoristas: JSON.parse(localStorage.getItem(DB_KEYS.motoristas)) || [],
-    veiculos: JSON.parse(localStorage.getItem(DB_KEYS.veiculos)) || [],
-    missoes: JSON.parse(localStorage.getItem(DB_KEYS.missoes)) || [],
-    servicos: JSON.parse(localStorage.getItem(DB_KEYS.servicos)) || [],
-    servicosVeiculo: JSON.parse(localStorage.getItem(DB_KEYS.servicosVeiculo)) || []
+    marcas: [],
+    modelos: [],
+    cores: [],
+    motoristas: [],
+    veiculos: [],
+    missoes: [],
+    servicos: [],
+    servicosVeiculo: []
 };
 
+// Carregar dados ao inicializar
+Object.assign(db, carregarDadosLocalstorage());
+
 function salvar() {
-    Object.keys(DB_KEYS).forEach(key => {
-        localStorage.setItem(DB_KEYS[key], JSON.stringify(db[key]));
-    });
+    try {
+        Object.keys(DB_KEYS).forEach(key => {
+            const valor = JSON.stringify(db[key]);
+            localStorage.setItem(DB_KEYS[key], valor);
+        });
+        console.log("✅ Dados salvos com sucesso no localStorage");
+        return true;
+    } catch (error) {
+        console.error("❌ Erro ao salvar dados:", error);
+        alert("⚠️ Erro ao salvar dados! Verifique o console para mais detalhes.");
+        return false;
+    }
 }
 
 function salvarDb() {
-    salvar();
-    renderizar();
+    if (salvar()) {
+        renderizar();
+    }
+}
+
+// Função de diagnóstico
+function diagnosticarBancoDados() {
+    console.log("=== DIAGNÓSTICO DO BANCO DE DADOS ===");
+    console.log("localStorage disponível:", typeof localStorage !== 'undefined');
+    console.log("Tamanho do localStorage:", Object.keys(localStorage).length, "itens");
+    
+    Object.keys(DB_KEYS).forEach(key => {
+        const chave = DB_KEYS[key];
+        const valor = localStorage.getItem(chave);
+        console.log(`${chave}:`, valor ? `${valor.length} caracteres` : 'VAZIO');
+    });
+    
+    console.log("Dados carregados em memoria:", db);
+    console.log("======================================");
+}
+
+// Função para forçar salvamento
+function forcarSalvarDados() {
+    console.log("🔄 Forçando salvamento de dados...");
+    
+    if (salvar()) {
+        const msg = document.getElementById("mensagemDiagnostico");
+        msg.innerHTML = '<div class="alert alert-success" style="margin-bottom: 0;"><i class="fas fa-check-circle"></i> ✅ Todos os dados foram salvos com sucesso!</div>';
+        msg.style.display = "block";
+        
+        setTimeout(() => {
+            msg.style.display = "none";
+        }, 3000);
+    } else {
+        const msg = document.getElementById("mensagemDiagnostico");
+        msg.innerHTML = '<div class="alert alert-danger" style="margin-bottom: 0;"><i class="fas fa-exclamation-circle"></i> ❌ Erro ao salvar dados. Verifique o console (F12).</div>';
+        msg.style.display = "block";
+    }
+}
+
+// Função para verificar e reparar dados
+function verificarERepararDados() {
+    console.log("🔍 Verificando integridade dos dados...");
+    
+    let problemas = [];
+    let reparos = 0;
+    
+    // Verificar cada tipo de dado
+    Object.keys(db).forEach(key => {
+        if (!Array.isArray(db[key])) {
+            problemas.push(`${key} não é um array`);
+            db[key] = [];
+            reparos++;
+        }
+    });
+    
+    // Verificar viaturas duplicadas por placa
+    const placasVistas = new Set();
+    db.veiculos.forEach((v, idx) => {
+        if (placasVistas.has(v.placa)) {
+            problemas.push(`Viatura duplicada: placa ${v.placa}`);
+        } else {
+            placasVistas.add(v.placa);
+        }
+    });
+    
+    // Verificar motoristas
+    db.motoristas.forEach((m, idx) => {
+        if (!m.nome || !m.matricula) {
+            problemas.push(`Motorista ${idx} sem dados obrigatórios`);
+        }
+    });
+    
+    if (reparos > 0) {
+        salvar();
+        console.log(`✅ ${reparos} problemas foram reparados`);
+    }
+    
+    const msg = document.getElementById("mensagemDiagnostico");
+    let html = '<div class="alert alert-info" style="margin-bottom: 0;">';
+    
+    if (problemas.length === 0) {
+        html += '<i class="fas fa-check-circle"></i> ✅ <strong>Dados íntegros!</strong> Nenhum problema encontrado.';
+    } else {
+        html += '<i class="fas fa-exclamation-circle"></i> <strong>Problemas encontrados:</strong><ul style="margin-top: 10px; margin-bottom: 0;">';
+        problemas.forEach(p => {
+            html += `<li>${p}</li>`;
+        });
+        html += '</ul>';
+    }
+    
+    if (reparos > 0) {
+        html += `<br><strong style="color: #28a745;">→ ${reparos} reparos realizados!</strong>`;
+    }
+    
+    html += '</div>';
+    msg.innerHTML = html;
+    msg.style.display = "block";
+    
+    console.log("Problemas encontrados:", problemas.length);
+    console.log(problemas);
+}
+
+// Função para limpar todos os dados
+function limparTodosDados() {
+    const confirmacao = confirm(
+        "⚠️ ATENÇÃO! Isto vai deletar TODOS os dados:\n" +
+        "- Viaturas\n" +
+        "- Motoristas\n" +
+        "- Missões\n" +
+        "- Serviços\n\n" +
+        "Isto NÃO pode ser desfeito!\n\n" +
+        "Tem certeza?"
+    );
+    
+    if (!confirmacao) return;
+    
+    const confirmacao2 = confirm(
+        "⚠️ ÚLTIMA CONFIRMAÇÃO!\n\n" +
+        "Tem CERTEZA ABSOLUTA que deseja apagar TODOS os dados?"
+    );
+    
+    if (!confirmacao2) return;
+    
+    // Limpar dados
+    db.marcas = [];
+    db.modelos = [];
+    db.cores = [];
+    db.motoristas = [];
+    db.veiculos = [];
+    db.missoes = [];
+    db.servicos = [];
+    db.servicosVeiculo = [];
+    
+    // Salvar
+    if (salvar()) {
+        const msg = document.getElementById("mensagemDiagnostico");
+        msg.innerHTML = '<div class="alert alert-success" style="margin-bottom: 0;"><i class="fas fa-check-circle"></i> ✅ Todos os dados foram apagados com sucesso! A página será recarregada...</div>';
+        msg.style.display = "block";
+        
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    }
 }
 
 // ================= RENDERIZAÇÃO =================
