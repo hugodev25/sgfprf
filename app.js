@@ -1323,9 +1323,9 @@ function renderVeiculos(filtros = {}) {
         viaturas = viaturas.filter(v => v.placa?.toLowerCase().includes(filtros.placa));
     }
 
-    lista.innerHTML = viaturas.map(v => {
+    lista.innerHTML = viaturas.map((v, filteredIndex) => {
         const infoOleo = calcularProximaTrocaOleo(v);
-        const emEdicao = estadoEdicao.veiculoEmEdicao === v.index;
+        const emEdicao = estadoEdicao.veiculoEmEdicao === v.placa;
         
         return `
         <div class="card" style="margin-bottom:10px;">
@@ -1333,7 +1333,7 @@ function renderVeiculos(filtros = {}) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div style="flex: 1;">
                         <strong>Placa:</strong>
-                        <input type="text" id="placa${v.index}" value="${v.placa}" 
+                        <input type="text" id="placa${v.placa.replace(/[^a-zA-Z0-9]/g, '')}" value="${v.placa}" 
                                class="form-control" style="display: inline-block; width: 120px; margin: 0 5px;" 
                                placeholder="Placa" ${!emEdicao ? 'disabled' : ''}>
                         ${emEdicao ? `
@@ -1357,7 +1357,7 @@ function renderVeiculos(filtros = {}) {
                 <div>
                     <strong>Modelo:</strong> ${v.marca} ${v.modelo}<br>
                     <strong>Cor:</strong> ${emEdicao ? `
-                        <select id="cor${v.index}" class="form-control" style="display: inline-block; width: 150px; margin: 0 5px;">
+                        <select id="cor${v.placa.replace(/[^a-zA-Z0-9]/g, '')}" class="form-control" style="display: inline-block; width: 150px; margin: 0 5px;">
                             <option value="">Selecione...</option>
                         </select>
                         <button onclick="salvarCorVeiculo('${v.placa}')" class="btn btn-sm btn-outline-success" style="margin-left: 5px;">
@@ -1367,7 +1367,7 @@ function renderVeiculos(filtros = {}) {
                 </div>
                 <div style="margin-top: 10px; margin-bottom: 10px;">
                     <strong>Hodômetro:</strong> 
-                    <input type="number" id="hodometro${v.index}" value="${v.hodometro || 0}" style="width: 100px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;" ${!emEdicao ? 'disabled' : ''} /> km
+                    <input type="number" id="hodometro${v.placa.replace(/[^a-zA-Z0-9]/g, '')}" value="${v.hodometro || 0}" style="width: 100px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;" ${!emEdicao ? 'disabled' : ''} /> km
                     ${emEdicao ? `
                         <button onclick="salvarHodometroVeiculo('${v.placa}')" class="btn btn-sm btn-outline-success" style="margin-left: 5px;">
                             <i class="fas fa-check"></i> Salvar
@@ -1381,12 +1381,12 @@ function renderVeiculos(filtros = {}) {
                     </span>
                 </div>
                 <div class="mt-2">
-                    <select id="statusSelect${v.index}" class="form-control mb-2" style="width: auto; display: inline-block;">
+                    <select id="statusSelect${v.placa.replace(/[^a-zA-Z0-9]/g, '')}" class="form-control mb-2" style="width: auto; display: inline-block;">
                         <option value="disponivel" ${v.status === 'disponivel' ? 'selected' : ''}>Disponível</option>
                         <option value="em uso" ${v.status === 'em uso' ? 'selected' : ''}>Em Uso</option>
                         <option value="em manutencao" ${v.status === 'em manutencao' ? 'selected' : ''}>Em Manutenção</option>
                     </select>
-                    <button onclick="alterarStatus('${v.placa}', document.getElementById('statusSelect${v.index}').value)" class="btn btn-sm btn-outline-primary me-1">
+                    <button onclick="alterarStatus('${v.placa}', document.getElementById('statusSelect${v.placa.replace(/[^a-zA-Z0-9]/g, '')}').value)" class="btn btn-sm btn-outline-primary me-1">
                         Alterar Status
                     </button>
                     ${v.status === 'em uso' ? `<button onclick="desvincularViatura('${v.placa}')" class="btn btn-sm btn-outline-danger me-1">
@@ -2435,7 +2435,8 @@ async function excluirVeiculo(index) {
 }
 
 function salvarPlacaVeiculo(placaAtual) {
-    const input = document.getElementById(`placa${placaAtual}`);
+    const placaLimpa = placaAtual.replace(/[^a-zA-Z0-9]/g, '');
+    const input = document.getElementById(`placa${placaLimpa}`);
     if (!input) return;
 
     const novaPlaca = input.value.toUpperCase().trim();
@@ -2465,7 +2466,8 @@ function salvarPlacaVeiculo(placaAtual) {
 }
 
 function salvarHodometroVeiculo(placa) {
-    const input = document.getElementById(`hodometro${placa}`);
+    const placaLimpa = placa.replace(/[^a-zA-Z0-9]/g, '');
+    const input = document.getElementById(`hodometro${placaLimpa}`);
     if (!input) return;
 
     const novoKm = parseInt(input.value);
@@ -2510,7 +2512,8 @@ function cancelarEdicaoVeiculo(index) {
 }
 
 function salvarCorVeiculo(placa) {
-    const selectCor = document.getElementById(`cor${placa}`);
+    const placaLimpa = placa.replace(/[^a-zA-Z0-9]/g, '');
+    const selectCor = document.getElementById(`cor${placaLimpa}`);
     if (!selectCor) return;
 
     const novaCor = selectCor.value.trim();
@@ -2653,6 +2656,11 @@ function excluirAuxiliar(tipo, index) {
 }
 
 function gerarRelatorioUso() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
     const dataInicioEl = document.getElementById("filtroDataInicioUso");
     const dataFimEl = document.getElementById("filtroDataFimUso");
     const placaEl = document.getElementById("filtroPlacaUso");
@@ -2754,6 +2762,11 @@ function gerarRelatorioUso() {
 
 // Relatório de Status dos Veículos
 function gerarRelatorioStatusVeiculos() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
     const relatorioDiv = document.getElementById("relatorioStatusVeiculos");
     if (!relatorioDiv) return;
 
@@ -2782,6 +2795,11 @@ function gerarRelatorioStatusVeiculos() {
 
 // Relatório de Próximas Trocas de Óleo
 function gerarRelatorioTrocaOleo() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
     const relatorioDiv = document.getElementById("relatorioTrocaOleo");
     if (!relatorioDiv) return;
 
@@ -2818,6 +2836,11 @@ function gerarRelatorioTrocaOleo() {
 
 // Relatório de Motoristas
 function gerarRelatorioMotoristas() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
     const dataInicioEl = document.getElementById("filtroDataInicioMotorista");
     const dataFimEl = document.getElementById("filtroDataFimMotorista");
     const motoristaEl = document.getElementById("filtroMotorista");
@@ -2876,6 +2899,11 @@ function gerarRelatorioMotoristas() {
 
 // Relatório de Lista de Motoristas
 function gerarRelatorioListaMotoristas() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
     const relatorioDiv = document.getElementById("relatorioListaMotoristas");
     if (!relatorioDiv) return;
 
@@ -2902,6 +2930,11 @@ function gerarRelatorioListaMotoristas() {
 
 // Relatório de Serviços
 function gerarRelatorioServicos() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
     const dataInicioEl = document.getElementById("filtroDataInicioServicos");
     const dataFimEl = document.getElementById("filtroDataFimServicos");
     const placaEl = document.getElementById("filtroPlacaServicos");
@@ -2950,6 +2983,11 @@ function gerarRelatorioServicos() {
 
 // Relatório de Serviços Pendentes
 function gerarRelatorioServicosPendentes() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
     const relatorioDiv = document.getElementById("relatorioServicosPendentes");
     if (!relatorioDiv) return;
 
@@ -2980,6 +3018,11 @@ function gerarRelatorioServicosPendentes() {
 
 // Relatório de Estatísticas Gerais
 function gerarRelatorioEstatisticas() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
     const relatorioDiv = document.getElementById("relatorioEstatisticas");
     if (!relatorioDiv) return;
 
