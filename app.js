@@ -702,6 +702,9 @@ function atualizarVisibilidadeMenu() {
 }
 
 async function inicializarApp() {
+    // Aguardar o Firebase estar pronto
+    await esperarFirebase();
+    
     await carregarDadosFirestore();
     inicializarUsuarios();
     
@@ -723,6 +726,24 @@ async function inicializarApp() {
             document.getElementById("rememberMe").checked = true;
         }
     }
+}
+
+// ================= ESPERAR FIREBASE =================
+async function esperarFirebase(maxTentativas = 50) {
+    let tentativas = 0;
+    while (typeof window.db === 'undefined' && tentativas < maxTentativas) {
+        console.log(`Aguardando Firestore inicializar... (tentativa ${tentativas + 1}/${maxTentativas})`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        tentativas++;
+    }
+    
+    if (typeof window.db === 'undefined') {
+        console.error("❌ Firestore não foi inicializado a tempo!");
+        alert("❌ ERRO: Firestore não conseguiu inicializar. Por favor, recarregue a página.");
+        throw new Error("Firestore não inicializado");
+    }
+    
+    console.log("✅ Firestore pronto!");
 }
 
 // ================= VERIFICAÇÃO DE LOCALSTORAGE =================
@@ -801,7 +822,8 @@ let db = {
 
 async function carregarDadosFirestore() {
     if (typeof window.db === 'undefined') {
-        console.warn("Firestore ainda não foi inicializado.");
+        console.warn("⚠️ Firestore ainda não foi inicializado. Usando localStorage como fallback.");
+        Object.assign(db, carregarDadosLocalstorage());
         return;
     }
 
@@ -822,18 +844,27 @@ async function carregarDadosFirestore() {
             db.servicosVeiculo = Array.isArray(data.servicosVeiculo) ? data.servicosVeiculo : [];
 
             console.log("✅ Dados carregados do Firestore");
+            
+            // Garantir que existem usuários
+            if (!Array.isArray(db.usuarios) || db.usuarios.length === 0) {
+                console.log("⚠️ Nenhum usuário encontrado. Criando usuários padrão...");
+                criarUsuariosPadrao();
+                await salvarFirestore();
+            }
         } else {
             console.log("ℹ️ Documento do Firestore não existe. Criando base de dados no Firestore.");
-            if (!Array.isArray(db.usuarios) || db.usuarios.length === 0) {
-                criarUsuariosPadrao();
-            }
+            criarUsuariosPadrao();
             await salvarFirestore();
         }
     } catch (error) {
         console.error("❌ Erro ao carregar dados do Firestore:", error);
-        console.warn("⚠️ Falha ao carregar dados do Firestore. Usando localStorage como fallback.");
+        console.warn("⚠️ Usando localStorage como fallback.");
         Object.assign(db, carregarDadosLocalstorage());
-        alert("Erro ao carregar dados do Firestore. Usando localStorage como fallback. Verifique o console.");
+        
+        // Garantir que existem usuários no fallback também
+        if (!Array.isArray(db.usuarios) || db.usuarios.length === 0) {
+            criarUsuariosPadrao();
+        }
     }
 }
 
@@ -2404,7 +2435,6 @@ async function excluirVeiculo(index) {
         console.error("❌ Erro ao excluir viatura:", e);
         alert("Erro ao excluir: " + e.message);
     }
-}
 }
 
 function salvarPlacaVeiculo(index) {
