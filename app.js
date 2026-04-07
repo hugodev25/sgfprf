@@ -1172,7 +1172,10 @@ async function carregarVeiculos() {
     const lista = [];
 
     snapshot.forEach(doc => {
-        lista.push(doc.data());
+        lista.push({
+            id: doc.id,
+            ...doc.data()
+        });
     });
 
     return lista;
@@ -2276,29 +2279,75 @@ function getOleoAlertaHTML(veiculo) {
     return `<span style="color: ${cor}; font-weight: bold;"><i class="fas fa-oil-can"></i> ${info.mensagem}</span>`;
 }
 
-function alterarStatus(index, novoStatus) {
-    if (novoStatus === 'em uso' && db.veiculos[index].status !== 'em uso') {
+async function alterarStatus(index, novoStatus) {
+    const veiculo = db.veiculos[index];
+    if (!veiculo || !veiculo.id) {
+        alert("Erro: Viatura não encontrada ou sem ID.");
+        return;
+    }
+
+    if (novoStatus === 'em uso' && veiculo.status !== 'em uso') {
         if (!confirm("Alterar para 'Em Uso' criará uma missão sem motorista. Use a seção de Despacho para missões normais. Continuar?")) {
             return;
         }
     }
-    db.veiculos[index].status = novoStatus;
-    salvarDb();
+
+    try {
+        await updateDoc(doc(window.db, "veiculos", veiculo.id), {
+            status: novoStatus
+        });
+        veiculo.status = novoStatus; // Update local array
+        renderizar(); // Re-render to show changes
+        console.log("✅ Status da viatura atualizado com sucesso!");
+    } catch (e) {
+        console.error("❌ Erro ao atualizar status da viatura:", e);
+        alert("Erro ao atualizar status: " + e.message);
+    }
 }
 
-function desvincularViatura(index) {
+async function desvincularViatura(index) {
     if (!confirm("Deseja desvincular esta viatura do motorista?")) return;
 
-    db.veiculos[index].status = 'disponivel';
-    db.missoes = db.missoes.filter(m => m.veiculo.placa !== db.veiculos[index].placa);
-    salvarDb();
+    const veiculo = db.veiculos[index];
+    if (!veiculo || !veiculo.id) {
+        alert("Erro: Viatura não encontrada ou sem ID.");
+        return;
+    }
+
+    try {
+        await updateDoc(doc(window.db, "veiculos", veiculo.id), {
+            status: 'disponivel'
+        });
+        veiculo.status = 'disponivel';
+        db.missoes = db.missoes.filter(m => m.veiculo.placa !== veiculo.placa);
+        salvarDb(); // For missions, still local
+        renderizar();
+        console.log("✅ Viatura desvinculada com sucesso!");
+    } catch (e) {
+        console.error("❌ Erro ao desvincular viatura:", e);
+        alert("Erro ao desvincular: " + e.message);
+    }
 }
 
-function excluirVeiculo(index) {
+async function excluirVeiculo(index) {
     if (!confirm("Tem certeza que deseja excluir esta viatura?")) return;
 
-    db.veiculos.splice(index, 1);
-    salvarDb();
+    const veiculo = db.veiculos[index];
+    if (!veiculo || !veiculo.id) {
+        alert("Erro: Viatura não encontrada ou sem ID.");
+        return;
+    }
+
+    try {
+        await deleteDoc(doc(window.db, "veiculos", veiculo.id));
+        db.veiculos.splice(index, 1);
+        renderizar();
+        console.log("✅ Viatura excluída com sucesso!");
+    } catch (e) {
+        console.error("❌ Erro ao excluir viatura:", e);
+        alert("Erro ao excluir: " + e.message);
+    }
+}
 }
 
 function salvarPlacaVeiculo(index) {
