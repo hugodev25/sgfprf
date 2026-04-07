@@ -2368,7 +2368,7 @@ function gerarRelatorioListaMotoristas() {
         html += `<tr>
             <td><strong>${motorista.nome}</strong></td>
             <td>${motorista.cargo || '-'}</td>
-            <td>${motorista.cnh}</td>
+            <td>${motorista.matricula}</td>
             <td>${motorista.telefone || '-'}</td>
             <td><span class="badge bg-info">${missoesAtivas}</span></td>
         </tr>`;
