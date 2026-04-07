@@ -1337,19 +1337,19 @@ function renderVeiculos(filtros = {}) {
                                class="form-control" style="display: inline-block; width: 120px; margin: 0 5px;" 
                                placeholder="Placa" ${!emEdicao ? 'disabled' : ''}>
                         ${emEdicao ? `
-                            <button onclick="salvarPlacaVeiculo(${v.index})" class="btn btn-sm btn-outline-success" title="Salvar placa">
+                            <button onclick="salvarPlacaVeiculo('${v.placa}')" class="btn btn-sm btn-outline-success" title="Salvar placa">
                                 <i class="fas fa-check"></i> Salvar
                             </button>
-                            <button onclick="cancelarEdicaoVeiculo(${v.index})" class="btn btn-sm btn-outline-secondary" title="Cancelar">
+                            <button onclick="cancelarEdicaoVeiculo('${v.placa}')" class="btn btn-sm btn-outline-secondary" title="Cancelar">
                                 <i class="fas fa-times"></i> Cancelar
                             </button>
                         ` : `
-                            <button onclick="iniciarEdicaoVeiculo(${v.index})" class="btn btn-sm btn-outline-primary" title="Editar placa">
+                            <button onclick="iniciarEdicaoVeiculo('${v.placa}')" class="btn btn-sm btn-outline-primary" title="Editar placa">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
                         `}
                     </div>
-                    <button onclick="abrirInfoServicos(${v.index})" class="btn btn-sm" style="background: #0b3d91; color: white; border: none; padding: 5px 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;" title="Informações e Serviços">
+                    <button onclick="abrirInfoServicos('${v.placa}')" class="btn btn-sm" style="background: #0b3d91; color: white; border: none; padding: 5px 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;" title="Informações e Serviços">
                         <i class="fas fa-cog"></i>
                     </button>
                 </div>
@@ -1360,7 +1360,7 @@ function renderVeiculos(filtros = {}) {
                         <select id="cor${v.index}" class="form-control" style="display: inline-block; width: 150px; margin: 0 5px;">
                             <option value="">Selecione...</option>
                         </select>
-                        <button onclick="salvarCorVeiculo(${v.index})" class="btn btn-sm btn-outline-success" style="margin-left: 5px;">
+                        <button onclick="salvarCorVeiculo('${v.placa}')" class="btn btn-sm btn-outline-success" style="margin-left: 5px;">
                             <i class="fas fa-check"></i> Salvar
                         </button>
                     ` : `${v.cor || '-'}`}<br>
@@ -1369,7 +1369,7 @@ function renderVeiculos(filtros = {}) {
                     <strong>Hodômetro:</strong> 
                     <input type="number" id="hodometro${v.index}" value="${v.hodometro || 0}" style="width: 100px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;" ${!emEdicao ? 'disabled' : ''} /> km
                     ${emEdicao ? `
-                        <button onclick="salvarHodometroVeiculo(${v.index})" class="btn btn-sm btn-outline-success" style="margin-left: 5px;">
+                        <button onclick="salvarHodometroVeiculo('${v.placa}')" class="btn btn-sm btn-outline-success" style="margin-left: 5px;">
                             <i class="fas fa-check"></i> Salvar
                         </button>
                     ` : ''}
@@ -1386,13 +1386,13 @@ function renderVeiculos(filtros = {}) {
                         <option value="em uso" ${v.status === 'em uso' ? 'selected' : ''}>Em Uso</option>
                         <option value="em manutencao" ${v.status === 'em manutencao' ? 'selected' : ''}>Em Manutenção</option>
                     </select>
-                    <button onclick="alterarStatus(${v.index}, document.getElementById('statusSelect${v.index}').value)" class="btn btn-sm btn-outline-primary me-1">
+                    <button onclick="alterarStatus('${v.placa}', document.getElementById('statusSelect${v.index}').value)" class="btn btn-sm btn-outline-primary me-1">
                         Alterar Status
                     </button>
-                    ${v.status === 'em uso' ? `<button onclick="desvincularViatura(${v.index})" class="btn btn-sm btn-outline-danger me-1">
+                    ${v.status === 'em uso' ? `<button onclick="desvincularViatura('${v.placa}')" class="btn btn-sm btn-outline-danger me-1">
                         Desvincular
                     </button>` : ''}
-                    <button onclick="excluirVeiculo(${v.index})" class="btn btn-sm btn-outline-danger">
+                    <button onclick="excluirVeiculo('${v.placa}')" class="btn btn-sm btn-outline-danger">
                         <i class="fas fa-trash"></i> Excluir
                     </button>
                 </div>
@@ -1651,11 +1651,10 @@ function editarHodometro(index) {
     salvarDb();
 }
 
-function abrirInfoServicos(index) {
-    const veiculo = db.veiculos[index];
+function abrirInfoServicos(placa) {
+    const veiculo = db.veiculos.find(v => v.placa === placa);
     if (!veiculo) return;
     
-    const placa = veiculo.placa;
     const servicosVeiculo = db.servicosVeiculo.filter(s => s.placa === placa);
     
     const ultimaTrocaOleo = servicosVeiculo
@@ -2368,9 +2367,10 @@ function getOleoAlertaHTML(veiculo) {
 }
 
 async function alterarStatus(index, novoStatus) {
-    const veiculo = db.veiculos[index];
-    if (!veiculo || !veiculo.id) {
-        alert("Erro: Viatura não encontrada ou sem ID.");
+    // Como o index pode estar incorreto devido à filtragem, vamos encontrar o veículo correto
+    const veiculo = db.veiculos.find(v => v.placa === index);
+    if (!veiculo) {
+        alert("Erro: Viatura não encontrada.");
         return;
     }
 
@@ -2381,11 +2381,9 @@ async function alterarStatus(index, novoStatus) {
     }
 
     try {
-        await updateDoc(doc(window.db, "veiculos", veiculo.id), {
-            status: novoStatus
-        });
-        veiculo.status = novoStatus; // Update local array
-        renderizar(); // Re-render to show changes
+        veiculo.status = novoStatus;
+        salvarDb();
+        renderizar();
         console.log("✅ Status da viatura atualizado com sucesso!");
     } catch (e) {
         console.error("❌ Erro ao atualizar status da viatura:", e);
@@ -2396,19 +2394,17 @@ async function alterarStatus(index, novoStatus) {
 async function desvincularViatura(index) {
     if (!confirm("Deseja desvincular esta viatura do motorista?")) return;
 
-    const veiculo = db.veiculos[index];
-    if (!veiculo || !veiculo.id) {
-        alert("Erro: Viatura não encontrada ou sem ID.");
+    // Como o index pode estar incorreto devido à filtragem, vamos encontrar o veículo correto
+    const veiculo = db.veiculos.find(v => v.placa === index);
+    if (!veiculo) {
+        alert("Erro: Viatura não encontrada.");
         return;
     }
 
     try {
-        await updateDoc(doc(window.db, "veiculos", veiculo.id), {
-            status: 'disponivel'
-        });
         veiculo.status = 'disponivel';
         db.missoes = db.missoes.filter(m => m.veiculo.placa !== veiculo.placa);
-        salvarDb(); // For missions, still local
+        salvarDb();
         renderizar();
         console.log("✅ Viatura desvinculada com sucesso!");
     } catch (e) {
@@ -2420,15 +2416,16 @@ async function desvincularViatura(index) {
 async function excluirVeiculo(index) {
     if (!confirm("Tem certeza que deseja excluir esta viatura?")) return;
 
-    const veiculo = db.veiculos[index];
-    if (!veiculo || !veiculo.id) {
-        alert("Erro: Viatura não encontrada ou sem ID.");
+    // Como o index pode estar incorreto devido à filtragem, vamos encontrar o veículo correto
+    const veiculoIndex = db.veiculos.findIndex(v => v.placa === index);
+    if (veiculoIndex === -1) {
+        alert("Erro: Viatura não encontrada.");
         return;
     }
 
     try {
-        await deleteDoc(doc(window.db, "veiculos", veiculo.id));
-        db.veiculos.splice(index, 1);
+        db.veiculos.splice(veiculoIndex, 1);
+        salvarDb();
         renderizar();
         console.log("✅ Viatura excluída com sucesso!");
     } catch (e) {
@@ -2437,8 +2434,8 @@ async function excluirVeiculo(index) {
     }
 }
 
-function salvarPlacaVeiculo(index) {
-    const input = document.getElementById(`placa${index}`);
+function salvarPlacaVeiculo(placaAtual) {
+    const input = document.getElementById(`placa${placaAtual}`);
     if (!input) return;
 
     const novaPlaca = input.value.toUpperCase().trim();
@@ -2447,21 +2444,28 @@ function salvarPlacaVeiculo(index) {
         return;
     }
 
+    // Encontrar o veículo pela placa atual
+    const veiculoIndex = db.veiculos.findIndex(v => v.placa === placaAtual);
+    if (veiculoIndex === -1) {
+        alert("Veículo não encontrado!");
+        return;
+    }
+
     // Verificar se placa já existe
-    if (db.veiculos.some((v, i) => i !== index && v.placa === novaPlaca)) {
+    if (db.veiculos.some(v => v.placa === novaPlaca && v.placa !== placaAtual)) {
         alert("Essa placa já existe!");
         return;
     }
 
-    db.veiculos[index].placa = novaPlaca;
+    db.veiculos[veiculoIndex].placa = novaPlaca;
     estadoEdicao.veiculoEmEdicao = null;
     salvarDb();
     renderizar();
     alert("Placa atualizada com sucesso!");
 }
 
-function salvarHodometroVeiculo(index) {
-    const input = document.getElementById(`hodometro${index}`);
+function salvarHodometroVeiculo(placa) {
+    const input = document.getElementById(`hodometro${placa}`);
     if (!input) return;
 
     const novoKm = parseInt(input.value);
@@ -2470,22 +2474,28 @@ function salvarHodometroVeiculo(index) {
         return;
     }
 
-    db.veiculos[index].hodometro = novoKm;
+    const veiculo = db.veiculos.find(v => v.placa === placa);
+    if (!veiculo) {
+        alert("Veículo não encontrado!");
+        return;
+    }
+
+    veiculo.hodometro = novoKm;
     estadoEdicao.veiculoEmEdicao = null;
     salvarDb();
     renderizar();
     alert("Quilometragem atualizada com sucesso!");
 }
 
-function iniciarEdicaoVeiculo(index) {
-    estadoEdicao.veiculoEmEdicao = index;
+function iniciarEdicaoVeiculo(placa) {
+    estadoEdicao.veiculoEmEdicao = placa;
     // Popular o select de cor com as cores disponíveis
     setTimeout(() => {
-        const selectCor = document.getElementById(`cor${index}`);
+        const selectCor = document.getElementById(`cor${placa}`);
         if (selectCor) {
-            preencherSelect(`cor${index}`, db.cores);
+            preencherSelect(`cor${placa}`, db.cores);
             // Definir o valor atual da cor
-            const veiculo = db.veiculos[index];
+            const veiculo = db.veiculos.find(v => v.placa === placa);
             if (veiculo && veiculo.cor) {
                 selectCor.value = veiculo.cor;
             }
@@ -2499,14 +2509,20 @@ function cancelarEdicaoVeiculo(index) {
     filtrarViaturas();
 }
 
-function salvarCorVeiculo(index) {
-    const selectCor = document.getElementById(`cor${index}`);
+function salvarCorVeiculo(placa) {
+    const selectCor = document.getElementById(`cor${placa}`);
     if (!selectCor) return;
 
     const novaCor = selectCor.value.trim();
     if (!novaCor) return alert("Selecione uma cor!");
 
-    db.veiculos[index].cor = novaCor;
+    const veiculo = db.veiculos.find(v => v.placa === placa);
+    if (!veiculo) {
+        alert("Veículo não encontrado!");
+        return;
+    }
+
+    veiculo.cor = novaCor;
     estadoEdicao.veiculoEmEdicao = null;
     salvarDb();
     filtrarViaturas();
