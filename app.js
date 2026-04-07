@@ -338,6 +338,13 @@ function fazerLogin(event) {
     btnLogin.disabled = true;
 
     setTimeout(() => {
+        if (!Array.isArray(db.usuarios) || db.usuarios.length === 0) {
+            errorDiv.innerHTML = "<i class='fas fa-exclamation-circle'></i> Dados de usuários não carregados do banco. Verifique o console.";
+            errorDiv.classList.add("show");
+            btnLogin.disabled = false;
+            return;
+        }
+
         const usuarioEncontrado = db.usuarios.find(
             u => u.usuario === usuario && compararSenhas(senha, u.senha) && u.ativo
         );
@@ -740,13 +747,9 @@ if (!verificarLocalStorageDisponivel()) {
 }
 
 // ================= BANCO DE DADOS =================
-// ATENÇÃO: este sistema salva os dados localmente no navegador
-// usando localStorage. Isso significa que os dados são persistentes
-// apenas no mesmo navegador e no mesmo computador.
-// Para sincronizar entre navegadores ou computadores diferentes,
-// é necessário implementar um backend ou serviço de nuvem.
+// ATENÇÃO: o sistema armazena os dados principais no Firestore.
+// O localStorage é usado apenas para sessão e preferências de navegador.
 const DB_KEYS = {
-    usuarios: "prf_usuarios",
     marcas: "prf_marcas",
     modelos: "prf_modelos",
     cores: "prf_cores",
