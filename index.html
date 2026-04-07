@@ -384,12 +384,11 @@
             position: relative;
         }
 
-        /* Overlay para mobile */
-        .main-container::before {
+        /* Mobile Overlay */
+        .mobile-overlay {
             display: none;
-            content: '';
             position: fixed;
-            top: 80px;
+            top: 0;
             left: 0;
             right: 0;
             bottom: 0;
@@ -398,7 +397,7 @@
             cursor: pointer;
         }
 
-        .main-container.menu-open::before {
+        .mobile-overlay.visible {
             display: block;
         }
 
@@ -413,9 +412,12 @@
             z-index: 2;
         }
 
-        nav.sidebar:hover {
-            width: 240px;
-            overflow-y: auto;
+        /* Desktop: Expandir ao passar o mouse */
+        @media (min-width: 769px) {
+            nav.sidebar:hover {
+                width: 240px;
+                overflow-y: auto;
+            }
         }
 
         /* OVERLAY MOBILE */
@@ -450,10 +452,22 @@
             transition: opacity 0.2s ease, width 0.2s ease;
         }
 
-        nav.sidebar:hover .nav-item .nav-text {
-            opacity: 1;
-            width: auto;
-            visibility: visible;
+        /* Desktop: Mostrar texto ao passar mouse */
+        @media (min-width: 769px) {
+            nav.sidebar:hover .nav-item .nav-text {
+                opacity: 1;
+                width: auto;
+                visibility: visible;
+            }
+        }
+
+        /* Mobile: Mostrar texto quando menu aberto */
+        @media (max-width: 768px) {
+            nav.sidebar.mobile-open .nav-item .nav-text {
+                opacity: 1 !important;
+                width: auto !important;
+                visibility: visible !important;
+            }
         }
 
         nav.sidebar.collapsed .nav-item .nav-text {
@@ -858,48 +872,52 @@
                 transform: translateX(0);
             }
 
-            /* MOBILE: Remover hover effect do sidebar */
+            /* MOBILE: Desabilitar hover no mobile */
             nav.sidebar:hover {
                 width: 240px;
-            }
-
-            /* MOBILE: Dimmer ao abrir menu */
-            .main-container::before {
-                display: none;
-                content: '';
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 8;
-            }
-
-            .main-container.menu-open::before {
-                display: block;
+                transform: translateX(-100%);
             }
 
             /* MOBILE: Header responsivo */
             header {
+                display: flex;
                 flex-wrap: nowrap;
-                padding: 15px 20px;
+                padding: 12px 15px;
+                gap: 10px;
+            }
+
+            .btn-hamburger {
+                min-width: 40px;
+                flex-shrink: 0;
             }
 
             .logo-area {
                 flex: 1;
+                min-width: 0;
             }
 
             .logo-area h2 {
-                font-size: 16px;
+                font-size: 14px;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             .logo-area img {
-                max-height: 50px;
+                max-height: 40px;
+                max-width: 100px;
             }
 
             .user-info {
-                font-size: 12px;
+                font-size: 11px;
+                min-width: 60px;
+                flex-shrink: 0;
+            }
+
+            .user-info .logout-btn {
+                padding: 4px 8px;
+                font-size: 10px;
             }
 
             /* MOBILE: Content padding */
@@ -988,6 +1006,9 @@
             </button>
         </div>
         </header>
+
+        <!-- Overlay mobile (deve estar fora do main-container) -->
+        <div class="mobile-overlay" id="mobileOverlay" onclick="fecharMenuMobile()"></div>
 
         <div class="main-container">
             <nav class="sidebar">
