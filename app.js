@@ -1,3 +1,27 @@
+// ================= FIREBASE (Import CDN - veja index.html) =================
+// Importando o Firebase (estilo moderno para Web/CDN)
+// Nota: As importações reais estão em index.html dentro de <script type="module">
+// import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+// import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+// Configuração do Firebase
+// const firebaseConfig = {
+//   apiKey: "AIzaSyDDINkRqSPPrawykih6YiSFleT-0UJKLJk",
+//   authDomain: "sgf-prf.firebaseapp.com",
+//   projectId: "sgf-prf",
+//   storageBucket: "sgf-prf.firebasestorage.app",
+//   messagingSenderId: "621177378155",
+//   appId: "1:621177378155:web:ba5cb5a5a5f5b60119e82e",
+//   measurementId: "G-E69301KQYZ"
+// };
+
+// Inicializa o Firebase e o Banco de Dados
+// const app = initializeApp(firebaseConfig);
+// const db = getFirestore(app);
+
+// As funções window.db, window.addDoc, window.collection, window.getDocs
+// já estão disponibilizadas globalmente via index.html
+
 // ================= CONSTANTES =================
 const AUTH_KEYS = {
     usuarios: "prf_usuarios",
@@ -718,6 +742,11 @@ if (!verificarLocalStorageDisponivel()) {
 }
 
 // ================= BANCO DE DADOS =================
+// ATENÇÃO: este sistema salva os dados localmente no navegador
+// usando localStorage. Isso significa que os dados são persistentes
+// apenas no mesmo navegador e no mesmo computador.
+// Para sincronizar entre navegadores ou computadores diferentes,
+// é necessário implementar um backend ou serviço de nuvem.
 const DB_KEYS = {
     marcas: "prf_marcas",
     modelos: "prf_modelos",
@@ -993,7 +1022,7 @@ function limparCamposMotorista() {
 }
 
 // ================= CADASTRO DE VEÍCULOS =================
-function cadastrarVeiculo() {
+async function cadastrarVeiculo() {
     const selMarca = document.getElementById("selMarca");
     const selModelo = document.getElementById("selModelo");
     const selCor = document.getElementById("selCor");
@@ -1010,18 +1039,21 @@ function cadastrarVeiculo() {
 
     if (!placa || !marca || !modelo) return alert("Preencha todos os dados!");
 
-    db.veiculos.push({
+    const veiculo = {
         marca,
         modelo,
         cor,
         placa,
         hodometro: hodometro,
         status: 'disponivel'
-    });
+    };
+
+    db.veiculos.push(veiculo);
 
     placaInput.value = "";
     if (hodometroInput) hodometroInput.value = "";
-    salvarDb();
+    await salvarVeiculo(veiculo);
+    renderizar();
 }
 
 // ================= VÍNCULO DE MISSÕES =================
@@ -1074,7 +1106,11 @@ function vincularMissao() {
 }
 
 // ================= RENDERIZAÇÃO =================
-function renderizar() {
+function renderizar(lista = null) {
+    if (Array.isArray(lista)) {
+        db.veiculos = lista;
+    }
+
     preencherSelect("selMarca", db.marcas);
     preencherSelect("selModelo", db.modelos);
     preencherSelect("selCor", db.cores);
@@ -1093,6 +1129,58 @@ function renderizar() {
     renderServicosManuencaoAtivos();
     atualizarDashboard();
     inicializarRelatorios();
+}
+
+async function salvarVeiculo(veiculo) {
+    // Usando window.db disponibilizado pelo index.html
+    try {
+        await addDoc(collection(window.db, "veiculos"), {
+            placa: veiculo.placa,
+            modelo: veiculo.modelo,
+            marca: veiculo.marca,
+            cor: veiculo.cor,
+            hodometro: veiculo.hodometro,
+            status: veiculo.status,
+            dataCadastro: new Date().toISOString()
+        });
+        console.log("✅ Viatura salva no Firestore com sucesso!");
+    } catch (e) {
+        console.error("❌ Erro ao salvar viatura no Firestore: ", e);
+        alert("Erro ao salvar viatura: " + e.message);
+    }
+}
+
+// Função de exemplo: para cadastrar viatura diretamente via Firestore
+async function salvarViaturaExemplo(placa, modelo, status) {
+    try {
+        const docRef = await addDoc(collection(window.db, "viaturas"), {
+            placa: placa,
+            modelo: modelo,
+            status: status,
+            dataCadastro: new Date()
+        });
+        console.log("Viatura cadastrada com sucesso! ID:", docRef.id);
+        alert("Viatura cadastrada com sucesso!");
+    } catch (e) {
+        console.error("Erro ao salvar: ", e);
+        alert("Erro: " + e.message);
+    }
+}
+
+async function carregarVeiculos() {
+    const snapshot = await getDocs(collection(window.db, "veiculos"));
+    const lista = [];
+
+    snapshot.forEach(doc => {
+        lista.push(doc.data());
+    });
+
+    return lista;
+}
+
+async function iniciar() {
+    const lista = await carregarVeiculos();
+    renderizar(lista);
 }
 
 // ================= SELECTS =================
@@ -1263,8 +1351,8 @@ function renderMotoristas() {
                 
                 <div style="margin-bottom: 10px;">
                     <label><strong>matricula:</strong></label>
-                    <input type="text" id="matriculaMotorista${i}" value="${m.cnh}" 
-                           class="form-control" style="margin-bottom: 5px;" placeholder="CNH" ${!emEdicao ? 'disabled' : ''}>
+                    <input type="text" id="matriculaMotorista${i}" value="${m.matricula || ''}" 
+                           class="form-control" style="margin-bottom: 5px;" placeholder="Matrícula" ${!emEdicao ? 'disabled' : ''}>
                 </div>
                 
                 <div style="margin-bottom: 10px;">
@@ -2314,25 +2402,25 @@ function editarVeiculo(index) {
 function salvarMotorista(index) {
     const nomeInput = document.getElementById(`nomeMotorista${index}`);
     const cargoInput = document.getElementById(`cargoMotorista${index}`);
-    const cnhInput = document.getElementById(`cnhMotorista${index}`);
+    const matriculaInput = document.getElementById(`matriculaMotorista${index}`);
     const telefoneInput = document.getElementById(`telefoneMotorista${index}`);
 
-    if (!nomeInput || !cargoInput || !cnhInput || !telefoneInput) return;
+    if (!nomeInput || !cargoInput || !matriculaInput || !telefoneInput) return;
 
     const novoNome = nomeInput.value.trim();
     const novoCargo = cargoInput.value.trim();
-    const novaCnh = cnhInput.value.trim();
+    const novaMatricula = matriculaInput.value.trim();
     const novoTel = telefoneInput.value.trim();
 
-    if (!novoNome || !novaCnh) {
-        alert("Nome e CNH são obrigatórios!");
+    if (!novoNome || !novaMatricula) {
+        alert("Nome e Matricula são obrigatórios!");
         return;
     }
 
     db.motoristas[index] = {
         nome: novoNome,
         cargo: novoCargo || null,
-        cnh: novaCnh,
+        matricula: novaMatricula,
         telefone: novoTel || null
     };
 
@@ -2350,15 +2438,15 @@ function editarMotorista(index) {
     if (novoNome === null) return;
 
     const novoCargo = prompt("Novo cargo:", m.cargo || "");
-    const novaCnh = prompt("Nova CNH:", m.cnh);
-    if (novaCnh === null) return;
+    const novaMatricula = prompt("Nova Matricula:", m.matricula || "");
+    if (novaMatricula === null) return;
 
     const novoTel = prompt("Novo telefone:", m.telefone || "");
 
     db.motoristas[index] = {
         nome: novoNome.trim(),
         cargo: novoCargo ? novoCargo.trim() : null,
-        cnh: novaCnh.trim(),
+        matricula: novaMatricula.trim(),
         telefone: novoTel ? novoTel.trim() : null
     };
 
@@ -2838,4 +2926,5 @@ function inicializarRelatorios() {
 document.addEventListener('DOMContentLoaded', function() {
     inicializarApp();
     inicializarRelatorios();
+    iniciar();
 });
