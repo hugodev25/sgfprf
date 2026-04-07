@@ -312,6 +312,31 @@
             flex-wrap: wrap;
             gap: 20px;
             backdrop-filter: blur(8px);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* BOTÃO HAMBURGER */
+        .btn-hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            transition: 0.2s;
+            z-index: 11;
+        }
+
+        .btn-hamburger:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+        }
+
+        .btn-hamburger i {
+            display: block;
         }
 
         .logo-area { 
@@ -356,6 +381,25 @@
             flex: 1;
             overflow: hidden;
             background: rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        /* Overlay para mobile */
+        .main-container::before {
+            display: none;
+            content: '';
+            position: fixed;
+            top: 80px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 8;
+            cursor: pointer;
+        }
+
+        .main-container.menu-open::before {
+            display: block;
         }
 
         nav.sidebar {
@@ -372,6 +416,23 @@
         nav.sidebar:hover {
             width: 240px;
             overflow-y: auto;
+        }
+
+        /* OVERLAY MOBILE */
+        nav.sidebar::before {
+            display: none;
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+
+        nav.sidebar.mobile-open::before {
+            display: block;
         }
 
         nav.sidebar .nav-item i {
@@ -772,6 +833,79 @@
                 padding: 0.5rem 0.75rem;
                 font-size: 12px;
             }
+
+            /* MOBILE: Mostrar hamburger */
+            .btn-hamburger {
+                display: block;
+            }
+
+            /* MOBILE: Esconder sidebar por padrão */
+            nav.sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                width: 240px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                overflow-y: auto;
+                padding-top: 80px;
+                z-index: 9;
+            }
+
+            /* MOBILE: Mostrar sidebar quando aberto */
+            nav.sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            /* MOBILE: Remover hover effect do sidebar */
+            nav.sidebar:hover {
+                width: 240px;
+            }
+
+            /* MOBILE: Dimmer ao abrir menu */
+            .main-container::before {
+                display: none;
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 8;
+            }
+
+            .main-container.menu-open::before {
+                display: block;
+            }
+
+            /* MOBILE: Header responsivo */
+            header {
+                flex-wrap: nowrap;
+                padding: 15px 20px;
+            }
+
+            .logo-area {
+                flex: 1;
+            }
+
+            .logo-area h2 {
+                font-size: 16px;
+            }
+
+            .logo-area img {
+                max-height: 50px;
+            }
+
+            .user-info {
+                font-size: 12px;
+            }
+
+            /* MOBILE: Content padding */
+            .content {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -836,6 +970,10 @@
     <!-- <!-- ========== DASHBOARD ========== -->
 <div class="dashboard" id="dashboard">
     <header>
+        <button class="btn-hamburger" id="btnHamburguer" onclick="toggleMenuMobile()">
+            <i class="fas fa-bars"></i>
+        </button>
+        
         <div class="logo-area">
             <img src="./logodir.png" 
                  alt="Logo PRF" 
@@ -1488,6 +1626,47 @@
                                         <li><strong>operador</strong> - Senha: <code>123456</code> (Operador)</li>
                                         <li><strong>teste</strong> - Senha: <code>123456</code> (Operador)</li>
                                     </ul>
+                                </div>
+                            </div>
+
+                            <!-- Diagnóstico e Manutenção do Banco de Dados -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-database"></i> Diagnóstico e Manutenção de Dados</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>⚠️ Use estas opções se está tendo problemas com dados não salvos:</strong></p>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <button onclick="diagnosticarBancoDados()" class="btn btn-info" style="background: #17a2b8; color: white;">
+                                            <i class="fas fa-stethoscope"></i> Ver Diagnóstico (Console)
+                                        </button>
+                                        <span style="margin-left: 10px; font-size: 12px; color: #666;">Abre o console (F12) para ver detalhes</span>
+                                    </div>
+
+                                    <div style="margin-bottom: 15px;">
+                                        <button onclick="forcarSalvarDados()" class="btn btn-success">
+                                            <i class="fas fa-save"></i> Forçar Salvamento de Dados
+                                        </button>
+                                        <span style="margin-left: 10px; font-size: 12px; color: #666;">Salva todos os dados novamente</span>
+                                    </div>
+
+                                    <div style="margin-bottom: 15px;">
+                                        <button onclick="verificarERepararDados()" class="btn btn-primary">
+                                            <i class="fas fa-tools"></i> Verificar e Reparar Dados
+                                        </button>
+                                        <span style="margin-left: 10px; font-size: 12px; color: #666;">Valida integridade dos dados</span>
+                                    </div>
+
+                                    <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #dc3545;">
+                                        <p style="margin: 0; font-size: 13px;"><i class="fas fa-exclamation-triangle"></i> <strong>Limpar todos os dados (CUIDADO!):</strong></p>
+                                        <button onclick="limparTodosDados()" class="btn btn-danger mt-2">
+                                            <i class="fas fa-trash"></i> Apagar Todos os Dados
+                                        </button>
+                                        <p style="margin-top: 10px; font-size: 12px; color: #666;">Isso vai deletar viaturas, motoristas e missões. Não pode ser desfeito!</p>
+                                    </div>
+
+                                    <div id="mensagemDiagnostico" style="margin-top: 15px; display: none;"></div>
                                 </div>
                             </div>
                         </div>
