@@ -750,6 +750,7 @@ if (!verificarLocalStorageDisponivel()) {
 // ATENÇÃO: o sistema armazena os dados principais no Firestore.
 // O localStorage é usado apenas para sessão e preferências de navegador.
 const DB_KEYS = {
+    usuarios: "prf_usuarios",
     marcas: "prf_marcas",
     modelos: "prf_modelos",
     cores: "prf_cores",
@@ -798,9 +799,6 @@ let db = {
     servicosVeiculo: []
 };
 
-// Carregar dados ao inicializar (fallback local enquanto Firestore sincroniza)
-Object.assign(db, carregarDadosLocalstorage());
-
 async function carregarDadosFirestore() {
     if (typeof window.db === 'undefined') {
         console.warn("Firestore ainda não foi inicializado.");
@@ -833,7 +831,9 @@ async function carregarDadosFirestore() {
         }
     } catch (error) {
         console.error("❌ Erro ao carregar dados do Firestore:", error);
-        alert("Erro ao carregar dados do Firestore. Verifique o console.");
+        console.warn("⚠️ Falha ao carregar dados do Firestore. Usando localStorage como fallback.");
+        Object.assign(db, carregarDadosLocalstorage());
+        alert("Erro ao carregar dados do Firestore. Usando localStorage como fallback. Verifique o console.");
     }
 }
 
