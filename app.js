@@ -778,6 +778,7 @@ const DB_KEYS = {
     motoristas: "prf_motoristas",
     veiculos: "prf_veiculos",
     missoes: "prf_missoes",
+    lotacoes: "prf_lotacoes",
     servicos: "prf_servicos",
     servicosVeiculo: "prf_servicos_veiculo"
 };
@@ -817,6 +818,7 @@ let db = {
     veiculos: [],
     missoes: [],
     servicos: [],
+    lotacoes: [],
     servicosVeiculo: []
 };
 
@@ -842,6 +844,7 @@ async function carregarDadosFirestore() {
             db.missoes = Array.isArray(data.missoes) ? data.missoes : [];
             db.servicos = Array.isArray(data.servicos) ? data.servicos : [];
             db.servicosVeiculo = Array.isArray(data.servicosVeiculo) ? data.servicosVeiculo : [];
+            db.lotacoes = Array.isArray(data.lotacoes) ? data.lotacoes : [];
 
             console.log("✅ Dados carregados do Firestore");
             
@@ -885,6 +888,7 @@ async function salvarFirestore() {
             veiculos: db.veiculos,
             missoes: db.missoes,
             servicos: db.servicos,
+            lotacoes: db.lotacoes,
             servicosVeiculo: db.servicosVeiculo
         }, { merge: true });
 
@@ -1028,6 +1032,7 @@ function limparTodosDados() {
     db.marcas = [];
     db.modelos = [];
     db.cores = [];
+    db.lotacoes = [];
     db.motoristas = [];
     db.veiculos = [];
     db.missoes = [];
@@ -1075,6 +1080,19 @@ function cadastrarModelo() {
     salvarDb();
 }
 
+function cadastrarLotacao() {
+    const input = document.getElementById("inputLotacao");
+    if (!input) return;
+
+    const valor = input.value.trim();
+    if (!valor) return alert("Digite a lotação!");
+
+    db.lotacoes.push(valor);
+    input.value = "";
+
+    salvarDb();
+}
+
 function cadastrarCor() {
     const input = document.getElementById("inputCor");
     if (!input) return;
@@ -1096,7 +1114,7 @@ function cadastrarMotorista() {
 
     if (!nome || !matricula) return alert("Nome e Matricula são obrigatórios!");
 
-    db.motoristas.push({ nome, cargo: lotacao, matricula, telefone: tel });
+    db.motoristas.push({ nome, lotacao, matricula, telefone: tel });
 
     limparCamposMotorista();
     salvarDb();
@@ -1438,9 +1456,7 @@ function renderMotoristas() {
                     <label><strong>Lotação:</strong></label>
                     <select id="lotacaoMotorista${i}" class="form-control" style="margin-bottom: 5px;" ${!emEdicao ? 'disabled' : ''}>
                         <option value="">Selecione</option>
-                        <option value="Motorista" ${m.cargo === 'Motorista' ? 'selected' : ''}>Motorista</option>
-                        <option value="Auxiliar" ${m.cargo === 'Auxiliar' ? 'selected' : ''}>Auxiliar</option>
-                        <option value="Supervisor" ${m.cargo === 'Supervisor' ? 'selected' : ''}>Supervisor</option>
+                        ${db.lotacoes.map(l => `<option value="${l}" ${ (m.lotacao || m.cargo || '') === l ? 'selected' : ''}>${l}</option>`).join('')}
                     </select>
                 </div>
                 
@@ -2578,7 +2594,7 @@ function salvarMotorista(index) {
 
     db.motoristas[index] = {
         nome: novoNome,
-        cargo: novoLotacao || null,
+        lotacao: novoLotacao || null,
         matricula: novaMatricula,
         telefone: novoTel || null
     };
@@ -2596,7 +2612,7 @@ function editarMotorista(index) {
     const novoNome = prompt("Novo nome:", m.nome);
     if (novoNome === null) return;
 
-    const novoLotacao = prompt("Nova lotação:", m.cargo || "");
+    const novoLotacao = prompt("Nova lotação:", m.lotacao || m.cargo || "");
     const novaMatricula = prompt("Nova Matricula:", m.matricula || "");
     if (novaMatricula === null) return;
 
@@ -2604,7 +2620,7 @@ function editarMotorista(index) {
 
     db.motoristas[index] = {
         nome: novoNome.trim(),
-        cargo: novoLotacao ? novoLotacao.trim() : null,
+        lotacao: novoLotacao ? novoLotacao.trim() : null,
         matricula: novaMatricula.trim(),
         telefone: novoTel ? novoTel.trim() : null
     };
