@@ -1090,20 +1090,20 @@ function cadastrarCor() {
 
 function cadastrarMotorista() {
     const nome = document.getElementById("nomeMotorista")?.value.trim();
-    const cargo = document.getElementById("cargoMotorista")?.value.trim();
+    const lotacao = document.getElementById("lotacaoMotorista")?.value.trim();
     const matricula = document.getElementById("matriculaMotorista")?.value.trim();
     const tel = document.getElementById("telefoneMotorista")?.value.trim();
 
     if (!nome || !matricula) return alert("Nome e Matricula são obrigatórios!");
 
-    db.motoristas.push({ nome, cargo, matricula, telefone: tel });
+    db.motoristas.push({ nome, cargo: lotacao, matricula, telefone: tel });
 
     limparCamposMotorista();
     salvarDb();
 }
 
 function limparCamposMotorista() {
-    ["nomeMotorista", "cargoMotorista", "matriculaMotorista", "telefoneMotorista"]
+    ["nomeMotorista", "lotacaoMotorista", "matriculaMotorista", "telefoneMotorista"]
         .forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = "";
@@ -1435,9 +1435,13 @@ function renderMotoristas() {
                 </div>
                 
                 <div style="margin-bottom: 10px;">
-                    <label><strong>Cargo:</strong></label>
-                    <input type="text" id="cargoMotorista${i}" value="${m.cargo || ''}" 
-                           class="form-control" style="margin-bottom: 5px;" placeholder="Cargo" ${!emEdicao ? 'disabled' : ''}>
+                    <label><strong>Lotação:</strong></label>
+                    <select id="lotacaoMotorista${i}" class="form-control" style="margin-bottom: 5px;" ${!emEdicao ? 'disabled' : ''}>
+                        <option value="">Selecione</option>
+                        <option value="Motorista" ${m.cargo === 'Motorista' ? 'selected' : ''}>Motorista</option>
+                        <option value="Auxiliar" ${m.cargo === 'Auxiliar' ? 'selected' : ''}>Auxiliar</option>
+                        <option value="Supervisor" ${m.cargo === 'Supervisor' ? 'selected' : ''}>Supervisor</option>
+                    </select>
                 </div>
                 
                 <div style="margin-bottom: 10px;">
@@ -2556,14 +2560,14 @@ function editarVeiculo(index) {
 
 function salvarMotorista(index) {
     const nomeInput = document.getElementById(`nomeMotorista${index}`);
-    const cargoInput = document.getElementById(`cargoMotorista${index}`);
+    const lotacaoInput = document.getElementById(`lotacaoMotorista${index}`);
     const matriculaInput = document.getElementById(`matriculaMotorista${index}`);
     const telefoneInput = document.getElementById(`telefoneMotorista${index}`);
 
-    if (!nomeInput || !cargoInput || !matriculaInput || !telefoneInput) return;
+    if (!nomeInput || !lotacaoInput || !matriculaInput || !telefoneInput) return;
 
     const novoNome = nomeInput.value.trim();
-    const novoCargo = cargoInput.value.trim();
+    const novoLotacao = lotacaoInput.value.trim();
     const novaMatricula = matriculaInput.value.trim();
     const novoTel = telefoneInput.value.trim();
 
@@ -2574,7 +2578,7 @@ function salvarMotorista(index) {
 
     db.motoristas[index] = {
         nome: novoNome,
-        cargo: novoCargo || null,
+        cargo: novoLotacao || null,
         matricula: novaMatricula,
         telefone: novoTel || null
     };
@@ -2592,7 +2596,7 @@ function editarMotorista(index) {
     const novoNome = prompt("Novo nome:", m.nome);
     if (novoNome === null) return;
 
-    const novoCargo = prompt("Novo cargo:", m.cargo || "");
+    const novoLotacao = prompt("Nova lotação:", m.cargo || "");
     const novaMatricula = prompt("Nova Matricula:", m.matricula || "");
     if (novaMatricula === null) return;
 
@@ -2600,7 +2604,7 @@ function editarMotorista(index) {
 
     db.motoristas[index] = {
         nome: novoNome.trim(),
-        cargo: novoCargo ? novoCargo.trim() : null,
+        cargo: novoLotacao ? novoLotacao.trim() : null,
         matricula: novaMatricula.trim(),
         telefone: novoTel ? novoTel.trim() : null
     };
