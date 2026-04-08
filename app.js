@@ -1091,6 +1091,7 @@ function cadastrarLotacao() {
     input.value = "";
 
     salvarDb();
+    renderAuxiliares();
 }
 
 function cadastrarCor() {
@@ -1228,8 +1229,9 @@ function renderizar(lista = null) {
 
     filtrarViaturas(); // Atualizado para usar filtros múltiplos
     renderMotoristas();
-    renderSelectViaturas();
+    preencherSelect("lotacaoMotorista", db.lotacoes);
     renderAuxiliares();
+    renderSelectViaturas();
     renderMissoes();
     renderServicosManuencao();
     renderServicosManuencaoAtivos();
@@ -1511,6 +1513,8 @@ function renderAuxiliares() {
     renderLista("listaMarcas", db.marcas, "marca");
     renderLista("listaModelos", db.modelos, "modelo");
     renderLista("listaCores", db.cores, "cor");
+    renderLista("listaLotacoes", db.lotacoes, "lotacao");
+    preencherSelect("lotacaoMotorista", db.lotacoes);
 }
 
 function renderLista(id, lista, tipo) {
@@ -2637,7 +2641,7 @@ function excluirMotorista(index) {
 
 function salvarAuxiliar(tipo, index) {
     // Mapear tipo singular para plural
-    const tipoPlural = tipo === 'cor' ? 'cores' : tipo + 's';
+    const tipoPlural = tipo === 'cor' ? 'cores' : tipo === 'lotacao' ? 'lotacoes' : tipo + 's';
     const input = document.getElementById(`input${tipo}${index}`);
     if (!input) return;
 
@@ -2655,7 +2659,7 @@ function salvarAuxiliar(tipo, index) {
 
 function editarAuxiliar(tipo, index) {
     // Mapear tipo singular para plural
-    const tipoPlural = tipo === 'cor' ? 'cores' : tipo + 's';
+    const tipoPlural = tipo === 'cor' ? 'cores' : tipo === 'lotacao' ? 'lotacoes' : tipo + 's';
     const item = db[tipoPlural][index];
     if (!item) return;
 
@@ -2668,7 +2672,7 @@ function editarAuxiliar(tipo, index) {
 
 function excluirAuxiliar(tipo, index) {
     // Mapear tipo singular para plural
-    const tipoPlural = tipo === 'cor' ? 'cores' : tipo + 's';
+    const tipoPlural = tipo === 'cor' ? 'cores' : tipo === 'lotacao' ? 'lotacoes' : tipo + 's';
     if (!confirm(`Tem certeza que deseja excluir este ${tipo}?`)) return;
 
     db[tipoPlural].splice(index, 1);
