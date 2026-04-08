@@ -1286,7 +1286,9 @@
                                             <input type="text" id="nomeMotorista" class="form-control mb-2" placeholder="Nome do motorista">
                                         </div>
                                         <div class="col-md-2">
-                                            <input type="text" id="cargoMotorista" class="form-control mb-2" placeholder="Cargo">
+                                            <select id="lotacaoMotorista" class="form-control mb-2">
+                                                <option value="">Selecione Lotação...</option>
+                                            </select>
                                         </div>
                                         <div class="col-md-2">
                                             <input type="text" id="matriculaMotorista" class="form-control mb-2" placeholder="Matricula">
@@ -1310,6 +1312,31 @@
                                 </div>
                                 <div class="card-body">
                                     <div id="listaMotoristas"></div>
+                                </div>
+                            </div>
+
+                            <!-- Cadastro de Lotações -->
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-map-marker"></i> Cadastrar Lotações de Motoristas</h5>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLotacoes" aria-expanded="true" aria-controls="collapseLotacoes">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                </div>
+                                <div id="collapseLotacoes" class="collapse show">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <input type="text" id="inputLotacao" class="form-control mb-2" placeholder="Digite a lotação do motorista">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button onclick="cadastrarLotacao()" class="btn btn-primary w-100">
+                                                    <i class="fas fa-save"></i> Adicionar Lotação
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="listaLotacoes" class="mt-3"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
