@@ -777,6 +777,87 @@ function calcularDiasAtraso(dataDevolucao) {
     return diferenca > 0 ? diferenca : 0;
 }
 
+function parseDataISO(dataStr) {
+    if (!dataStr) return null;
+    const partes = dataStr.split('-');
+    if (partes.length !== 3) return null;
+
+    const ano = parseInt(partes[0], 10);
+    const mes = parseInt(partes[1], 10) - 1;
+    const dia = parseInt(partes[2], 10);
+    const data = new Date(ano, mes, dia);
+    data.setHours(0, 0, 0, 0);
+    return data;
+}
+
+function getStatusMissao(missao) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const dataEntrega = parseDataISO(missao.dataEntrega);
+    const dataDevolucao = parseDataISO(missao.dataDevolucao);
+    const dataDevolutiva = parseDataISO(missao.dataDevolutiva);
+
+    if (dataDevolutiva) {
+        return {
+            status: 'Concluído',
+            label: 'Concluído',
+            badgeClass: 'bg-success',
+            color: '#28a745',
+            diasAtraso: calcularDiasAtraso(missao.dataDevolucao)
+        };
+    }
+
+    if (dataEntrega && hoje < dataEntrega) {
+        return {
+            status: 'Agendada',
+            label: 'Agendada',
+            badgeClass: 'bg-info',
+            color: '#0b3d91',
+            diasAtraso: 0
+        };
+    }
+
+    if (dataDevolucao) {
+        const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
+        if (diasAtraso > 0) {
+            return {
+                status: 'Atrasado',
+                label: `ATRASADO por ${diasAtraso} dia(s)`,
+                badgeClass: 'bg-danger',
+                color: '#dc3545',
+                diasAtraso
+            };
+        }
+    }
+
+    return {
+        status: 'Em Uso',
+        label: 'Em Uso',
+        badgeClass: 'bg-warning',
+        color: '#ffc107',
+        diasAtraso: 0
+    };
+}
+
+function atualizarStatusMissoesAgendadas() {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    db.missoes.forEach(missao => {
+        if (missao.ativo === false || missao.dataDevolutiva) return;
+        const dataEntrega = parseDataISO(missao.dataEntrega);
+        if (!dataEntrega) return;
+
+        if (hoje >= dataEntrega) {
+            const veiculo = db.veiculos.find(v => v.placa === missao.veiculo.placa);
+            if (veiculo && veiculo.status === 'disponivel') {
+                veiculo.status = 'em uso';
+            }
+        }
+    });
+}
+
 if (!verificarLocalStorageDisponivel()) {
     console.error("❌ ERRO CRÍTICO: localStorage não está disponível!");
     console.error("Isso pode ocorrer se:");
@@ -1204,20 +1285,25 @@ function vincularMissao() {
 
     if (!veiculo || !motorista) return alert("Veículo ou motorista inválido!");
 
-    veiculo.status = 'em uso';
+    const entregaData = parseDataISO(dataEntrega.value);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const agendada = entregaData && hoje < entregaData;
 
-    const agora = new Date();
-    const dataInicioISO = agora.toISOString().split('T')[0];
+    if (!agendada) {
+        veiculo.status = 'em uso';
+    }
 
     db.missoes.push({
         id: Date.now(),
         veiculo,
         motorista,
-        dataInicio: dataInicioISO,
+        dataInicio: dataEntrega.value,
         dataEntrega: dataEntrega.value,
         dataDevolucao: dataDevolucao.value,
         dataDevolutiva: null,
-        ativo: true
+        ativo: true,
+        agendada: agendada
     });
 
     // Limpar campos
@@ -1237,6 +1323,7 @@ function renderizar(lista = null) {
         db.veiculos = lista;
     }
 
+    atualizarStatusMissoesAgendadas();
     preencherSelect("selMarca", db.marcas);
     preencherSelect("selModelo", db.modelos);
     preencherSelect("selCor", db.cores);
@@ -1565,23 +1652,28 @@ function renderMissoes() {
     const missoesAtivas = db.missoes.filter(m => m.ativo !== false);
 
     lista.innerHTML = missoesAtivas.map((m, idx) => {
-        const diasAtraso = calcularDiasAtraso(m.dataDevolucao);
-        const statusAtraso = diasAtraso > 0 ? `<span style="color: red; font-weight: bold; margin-left: 10px;"><i class="fas fa-exclamation-triangle"></i> ATRASADO por ${diasAtraso} dia(s)</span>` : '';
+        const statusInfo = getStatusMissao(m);
+        const statusLabel = statusInfo.status === 'Atrasado'
+            ? `<span style="color: red; font-weight: bold; margin-left: 10px;"><i class="fas fa-exclamation-triangle"></i> ${statusInfo.label}</span>`
+            : `<span style="color: ${statusInfo.color}; font-weight: bold; margin-left: 10px;">${statusInfo.label}</span>`;
 
         // Encontrar índice real na array db.missoes
         const realIdx = db.missoes.indexOf(m);
+        const cardBorder = statusInfo.status === 'Atrasado' ? '#dc3545' : statusInfo.status === 'Agendada' ? '#0b3d91' : '#ddd';
 
         return `
-        <div class="card mb-2" style="border: 1px solid ${diasAtraso > 0 ? '#dc3545' : '#ddd'};">
+        <div class="card mb-2" style="border: 1px solid ${cardBorder};">
             <div class="card-body">
                 <strong>Missão #${m.id}</strong><br>
                 Viatura: ${m.veiculo.placa} - ${m.veiculo.modelo}<br>
                 Motorista: ${m.motorista.nome}<br>
-                Data Entrega: ${m.dataEntrega} | Data Devolução: ${m.dataDevolucao} ${statusAtraso}<br>
+                Data Entrega: ${m.dataEntrega} | Data Devolução: ${m.dataDevolucao} ${statusLabel}<br>
                 <div class="mt-2">
+                    ${statusInfo.status !== 'Agendada' ? `
                     <button onclick="devolverMissao(${realIdx})" class="btn btn-sm btn-outline-success">
                         <i class="fas fa-check"></i> Devolver
                     </button>
+                    ` : ''}
                     <button onclick="excluirMissao(${realIdx})" class="btn btn-sm btn-outline-danger">
                         <i class="fas fa-trash"></i> Excluir
                     </button>
@@ -1628,8 +1720,10 @@ function mostrarViaturasEmUso() {
         html += '<table class="table table-striped"><thead><tr><th>Placa</th><th>Veículo</th><th>Motorista</th><th>Status Entrega</th><th>Próxima Troca de Óleo</th></tr></thead><tbody>';
         
         viaturasEmUso.forEach(missao => {
-            const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
-            const statusEntrega = diasAtraso > 0 ? `<span style="color: red;"><i class="fas fa-exclamation-triangle"></i> ATRASADO ${diasAtraso}d</span>` : '<span style="color: green;">No Prazo</span>';
+            const statusInfo = getStatusMissao(missao);
+            const statusEntrega = statusInfo.status === 'Atrasado'
+                ? `<span style="color: red;"><i class="fas fa-exclamation-triangle"></i> ${statusInfo.label}</span>`
+                : `<span style="color: ${statusInfo.color};">${statusInfo.label}</span>`;
             
             const infOleo = calcularProximaTrocaOleo(missao.veiculo);
             
@@ -2895,15 +2989,15 @@ function gerarRelatorioMotoristas() {
     });
 
     missoesFiltradas.forEach(missao => {
-        const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
-        const status = diasAtraso > 0 ? 'Atrasado' : missao.dataDevolutiva ? 'Concluído' : 'Em andamento';
+        const statusInfo = getStatusMissao(missao);
+        const status = statusInfo.status === 'Atrasado' ? 'Atrasado' : statusInfo.status === 'Concluído' ? 'Concluído' : statusInfo.status === 'Agendada' ? 'Agendada' : 'Em andamento';
 
         html += `<tr>
             <td>${missao.motorista.nome}</td>
             <td>${missao.veiculo.placa}</td>
             <td>${new Date(missao.dataInicio).toLocaleDateString('pt-BR')}</td>
             <td>${new Date(missao.dataDevolucao).toLocaleDateString('pt-BR')}</td>
-            <td><span class="badge ${status === 'Atrasado' ? 'bg-danger' : status === 'Concluído' ? 'bg-success' : 'bg-warning'}">${status}</span></td>
+            <td><span class="badge ${status === 'Atrasado' ? 'bg-danger' : status === 'Concluído' ? 'bg-success' : status === 'Agendada' ? 'bg-info' : 'bg-warning'}">${status}</span></td>
         </tr>`;
     });
 
