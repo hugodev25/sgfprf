@@ -758,6 +758,25 @@ function verificarLocalStorageDisponivel() {
     }
 }
 
+function calcularDiasAtraso(dataDevolucao) {
+    if (!dataDevolucao) return 0;
+    const partes = dataDevolucao.split('-');
+    if (partes.length !== 3) return 0;
+
+    const ano = parseInt(partes[0], 10);
+    const mes = parseInt(partes[1], 10) - 1;
+    const dia = parseInt(partes[2], 10);
+
+    const dataDevolucaoObj = new Date(ano, mes, dia);
+    dataDevolucaoObj.setHours(0, 0, 0, 0);
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const diferenca = Math.floor((hoje - dataDevolucaoObj) / (1000 * 60 * 60 * 24));
+    return diferenca > 0 ? diferenca : 0;
+}
+
 if (!verificarLocalStorageDisponivel()) {
     console.error("❌ ERRO CRÍTICO: localStorage não está disponível!");
     console.error("Isso pode ocorrer se:");
@@ -1546,14 +1565,7 @@ function renderMissoes() {
     const missoesAtivas = db.missoes.filter(m => m.ativo !== false);
 
     lista.innerHTML = missoesAtivas.map((m, idx) => {
-        // Parsear data corretamente evitando problemas de timezone
-        const [ano, mes, dia] = m.dataDevolucao.split('-');
-        const dataDevolucaoObj = new Date(ano, mes - 1, dia);
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        dataDevolucaoObj.setHours(0, 0, 0, 0);
-        
-        const diasAtraso = Math.floor((hoje - dataDevolucaoObj) / (1000 * 60 * 60 * 24));
+        const diasAtraso = calcularDiasAtraso(m.dataDevolucao);
         const statusAtraso = diasAtraso > 0 ? `<span style="color: red; font-weight: bold; margin-left: 10px;"><i class="fas fa-exclamation-triangle"></i> ATRASADO por ${diasAtraso} dia(s)</span>` : '';
 
         // Encontrar índice real na array db.missoes
@@ -1616,12 +1628,7 @@ function mostrarViaturasEmUso() {
         html += '<table class="table table-striped"><thead><tr><th>Placa</th><th>Veículo</th><th>Motorista</th><th>Status Entrega</th><th>Próxima Troca de Óleo</th></tr></thead><tbody>';
         
         viaturasEmUso.forEach(missao => {
-            const dataDevolucaoObj = new Date(missao.dataDevolucao);
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            dataDevolucaoObj.setHours(0, 0, 0, 0);
-            
-            const diasAtraso = Math.floor((hoje - dataDevolucaoObj) / (1000 * 60 * 60 * 24));
+            const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
             const statusEntrega = diasAtraso > 0 ? `<span style="color: red;"><i class="fas fa-exclamation-triangle"></i> ATRASADO ${diasAtraso}d</span>` : '<span style="color: green;">No Prazo</span>';
             
             const infOleo = calcularProximaTrocaOleo(missao.veiculo);
@@ -2302,18 +2309,7 @@ function devolverMissao(index) {
     if (!confirm("Confirmar devolução da viatura?")) return;
     
     const missao = db.missoes[index];
-    const hoje = new Date();
-    
-    // Parsear data corretamente evitando problemas de timezone
-    const [ano, mes, dia] = missao.dataDevolucao.split('-');
-    const dataDevolucaoObj = new Date(ano, mes - 1, dia);
-    
-    // Ajustar para comparação sem horas
-    hoje.setHours(0, 0, 0, 0);
-    dataDevolucaoObj.setHours(0, 0, 0, 0);
-    
-    // Calcular dias de atraso
-    const diasAtraso = Math.floor((hoje - dataDevolucaoObj) / (1000 * 60 * 60 * 24));
+    const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
     
     db.missoes[index].ativo = false;
     db.missoes[index].dataDevolutiva = new Date().toISOString().split('T')[0];
@@ -2899,12 +2895,7 @@ function gerarRelatorioMotoristas() {
     });
 
     missoesFiltradas.forEach(missao => {
-        const dataDevolucaoObj = new Date(missao.dataDevolucao);
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        dataDevolucaoObj.setHours(0, 0, 0, 0);
-
-        const diasAtraso = Math.floor((hoje - dataDevolucaoObj) / (1000 * 60 * 60 * 24));
+        const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
         const status = diasAtraso > 0 ? 'Atrasado' : missao.dataDevolutiva ? 'Concluído' : 'Em andamento';
 
         html += `<tr>
