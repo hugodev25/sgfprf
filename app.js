@@ -790,6 +790,28 @@ function parseDataISO(dataStr) {
     return data;
 }
 
+function periodoSobreposto(inicioA, fimA, inicioB, fimB) {
+    if (!inicioA || !fimA || !inicioB || !fimB) return false;
+    return inicioA <= fimB && inicioB <= fimA;
+}
+
+function veiculoDisponivelNoPeriodo(placa, dataEntregaStr, dataDevolucaoStr) {
+    const dataEntrega = parseDataISO(dataEntregaStr);
+    const dataDevolucao = parseDataISO(dataDevolucaoStr);
+    if (!dataEntrega || !dataDevolucao || dataEntrega > dataDevolucao) return false;
+
+    return !db.missoes.some(missao => {
+        if (missao.ativo === false || missao.dataDevolutiva) return false;
+        if (!missao.veiculo || missao.veiculo.placa !== placa) return false;
+
+        const inicioExistente = parseDataISO(missao.dataEntrega);
+        const fimExistente = parseDataISO(missao.dataDevolucao);
+        if (!inicioExistente || !fimExistente) return false;
+
+        return periodoSobreposto(inicioExistente, fimExistente, dataEntrega, dataDevolucao);
+    });
+}
+
 function getStatusMissao(missao) {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -1285,6 +1307,10 @@ function vincularMissao() {
 
     if (!veiculo || !motorista) return alert("Veículo ou motorista inválido!");
 
+    if (!veiculoDisponivelNoPeriodo(veiculo.placa, dataEntrega.value, dataDevolucao.value)) {
+        return alert("Veículo já está reservado no período selecionado. Escolha outra data ou veículo.");
+    }
+
     const entregaData = parseDataISO(dataEntrega.value);
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -1606,12 +1632,8 @@ function renderSelectViaturas() {
     const sel = document.getElementById("despachoViatura");
     if (!sel) return;
 
-    const disponiveis = db.veiculos
-        .map((v, i) => ({ ...v, idx: i }))
-        .filter(v => v.status === 'disponivel');
-
     sel.innerHTML = '<option value="">Selecione...</option>' +
-        disponiveis.map(v => `<option value="${v.idx}">${v.placa} - ${v.modelo}</option>`).join("");
+        db.veiculos.map((v, i) => `<option value="${i}">${v.placa} - ${v.modelo} (${getStatusLabel(v.status)})</option>`).join("");
 }
 
 // ================= RENDER AUXILIARES =================
