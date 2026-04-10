@@ -1364,6 +1364,7 @@ function renderizar(lista = null) {
     preencherSelect("lotacaoMotorista", db.lotacoes);
     renderAuxiliares();
     renderSelectViaturas();
+    renderAgendamentos();
     renderMissoes();
     renderServicosManuencao();
     renderServicosManuencaoAtivos();
@@ -1670,8 +1671,8 @@ function renderMissoes() {
     const lista = document.getElementById("listaMissoes");
     if (!lista) return;
 
-    // Filtrar apenas missões ativas
-    const missoesAtivas = db.missoes.filter(m => m.ativo !== false);
+    // Filtrar apenas missões ativas (não agendadas)
+    const missoesAtivas = db.missoes.filter(m => m.ativo !== false && getStatusMissao(m).status !== 'Agendada');
 
     lista.innerHTML = missoesAtivas.map((m, idx) => {
         const statusInfo = getStatusMissao(m);
@@ -1681,7 +1682,7 @@ function renderMissoes() {
 
         // Encontrar índice real na array db.missoes
         const realIdx = db.missoes.indexOf(m);
-        const cardBorder = statusInfo.status === 'Atrasado' ? '#dc3545' : statusInfo.status === 'Agendada' ? '#0b3d91' : '#ddd';
+        const cardBorder = statusInfo.status === 'Atrasado' ? '#dc3545' : '#ddd';
 
         return `
         <div class="card mb-2" style="border: 1px solid ${cardBorder};">
@@ -1691,11 +1692,9 @@ function renderMissoes() {
                 Motorista: ${m.motorista.nome}<br>
                 Data Entrega: ${m.dataEntrega} | Data Devolução: ${m.dataDevolucao} ${statusLabel}<br>
                 <div class="mt-2">
-                    ${statusInfo.status !== 'Agendada' ? `
                     <button onclick="devolverMissao(${realIdx})" class="btn btn-sm btn-outline-success">
                         <i class="fas fa-check"></i> Devolver
                     </button>
-                    ` : ''}
                     <button onclick="excluirMissao(${realIdx})" class="btn btn-sm btn-outline-danger">
                         <i class="fas fa-trash"></i> Excluir
                     </button>
@@ -1706,6 +1705,38 @@ function renderMissoes() {
     
     if (missoesAtivas.length === 0) {
         lista.innerHTML = '<p style="color: #999;"><em>Nenhuma missão ativa</em></p>';
+    }
+}
+
+function renderAgendamentos() {
+    const lista = document.getElementById("listaAgendamentos");
+    if (!lista) return;
+
+    const agendamentos = db.missoes.filter(m => m.ativo !== false && getStatusMissao(m).status === 'Agendada');
+
+    lista.innerHTML = agendamentos.map((m, idx) => {
+        const realIdx = db.missoes.indexOf(m);
+
+        return `
+        <div class="card mb-2" style="border: 1px solid #0b3d91;">
+            <div class="card-body">
+                <strong>Missão #${m.id}</strong><br>
+                Viatura: ${m.veiculo.placa} - ${m.veiculo.modelo}<br>
+                Motorista: ${m.motorista.nome}<br>
+                Data de Início: ${m.dataEntrega}<br>
+                Data de Devolução: ${m.dataDevolucao}<br>
+                <span style="color: #0b3d91; font-weight: bold; margin-top: 10px; display: inline-block;">Agendada</span>
+                <div class="mt-2">
+                    <button onclick="excluirMissao(${realIdx})" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash"></i> Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    `}).join("");
+
+    if (agendamentos.length === 0) {
+        lista.innerHTML = '<p style="color: #999;"><em>Nenhum agendamento</em></p>';
     }
 }
 
@@ -1733,7 +1764,7 @@ function mostrarViaturasEmUso() {
     modal.className = 'modal active';
     modal.style.cssText = 'display: flex; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;';
     
-    const viaturasEmUso = db.missoes.filter(m => m.ativo !== false);
+    const viaturasEmUso = db.missoes.filter(m => m.ativo !== false && getStatusMissao(m).status !== 'Agendada');
     
     let html = `<h5>Viaturas em Uso</h5>`;
     if (viaturasEmUso.length === 0) {
