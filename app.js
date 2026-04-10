@@ -791,6 +791,13 @@ function parseDataISO(dataStr) {
     return data;
 }
 
+function formatarData(dataStr) {
+    if (!dataStr) return '';
+    const partes = dataStr.split('-');
+    if (partes.length !== 3) return dataStr;
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
 function periodoSobreposto(inicioA, fimA, inicioB, fimB) {
     if (!inicioA || !fimA || !inicioB || !fimB) return false;
     return inicioA <= fimB && inicioB <= fimA;
@@ -1691,7 +1698,7 @@ function renderMissoes() {
                 <strong>Missão #${m.id}</strong><br>
                 Viatura: ${m.veiculo.placa} - ${m.veiculo.modelo}<br>
                 Motorista: ${m.motorista.nome}<br>
-                Data Entrega: ${m.dataEntrega} | Data Devolução: ${m.dataDevolucao} ${statusLabel}<br>
+                Data Entrega: ${formatarData(m.dataEntrega)} | Data Devolução: ${formatarData(m.dataDevolucao)} ${statusLabel}<br>
                 <div class="mt-2">
                     <button onclick="devolverMissao(${realIdx})" class="btn btn-sm btn-outline-success">
                         <i class="fas fa-check"></i> Devolver
@@ -1724,8 +1731,8 @@ function renderAgendamentos() {
                 <strong>Missão #${m.id}</strong><br>
                 Viatura: ${m.veiculo.placa} - ${m.veiculo.modelo}<br>
                 Motorista: ${m.motorista.nome}<br>
-                Data de Início: ${m.dataEntrega}<br>
-                Data de Devolução: ${m.dataDevolucao}<br>
+                Data de Início: ${formatarData(m.dataEntrega)}<br>
+                Data de Devolução: ${formatarData(m.dataDevolucao)}<br>
                 <span style="color: #0b3d91; font-weight: bold; margin-top: 10px; display: inline-block;">Agendada</span>
                 <div class="mt-2">
                     <button onclick="excluirMissao(${realIdx})" class="btn btn-sm btn-outline-danger">
