@@ -654,6 +654,7 @@ function abrirPagina(pagina) {
     if (pagina === 'missoes') {
         renderSelectViaturas();
         preencherSelect("despachoMotorista", db.motoristas.map((m, i) => ({ value: i, text: m.nome })));
+        renderAgendamentos();
         renderMissoes();
     } else if (pagina === 'servicos') {
         renderServicosManuencaoAtivos();
