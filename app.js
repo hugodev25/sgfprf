@@ -856,6 +856,32 @@ function calcularDiasAtraso(dataDevolucao, dataDevolutiva = null) {
     return diferenca > 0 ? diferenca : 0;
 }
 
+function calcularDiasAntecipacao(dataDevolucao, dataDevolutiva) {
+    if (!dataDevolucao || !dataDevolutiva) return 0;
+
+    const partesDevolucao = dataDevolucao.split('-');
+    const partesDevolutiva = dataDevolutiva.split('T')[0].split('-');
+
+    if (partesDevolucao.length !== 3 || partesDevolutiva.length !== 3) return 0;
+
+    const dataDevolucaoObj = new Date(
+        parseInt(partesDevolucao[0], 10),
+        parseInt(partesDevolucao[1], 10) - 1,
+        parseInt(partesDevolucao[2], 10)
+    );
+    dataDevolucaoObj.setHours(0, 0, 0, 0);
+
+    const dataDevolutivaObj = new Date(
+        parseInt(partesDevolutiva[0], 10),
+        parseInt(partesDevolutiva[1], 10) - 1,
+        parseInt(partesDevolutiva[2], 10)
+    );
+    dataDevolutivaObj.setHours(0, 0, 0, 0);
+
+    const diferenca = Math.floor((dataDevolucaoObj - dataDevolutivaObj) / (1000 * 60 * 60 * 24));
+    return diferenca > 0 ? diferenca : 0;
+}
+
 function parseDataISO(dataStr) {
     if (!dataStr) return null;
     const partes = dataStr.split('-');
@@ -907,13 +933,25 @@ function getStatusMissao(missao) {
     const dataDevolutiva = parseDataISO(missao.dataDevolutiva);
 
     if (dataDevolutiva) {
-        return {
-            status: 'Concluído',
-            label: 'Concluído',
-            badgeClass: 'bg-success',
-            color: '#28a745',
-            diasAtraso: calcularDiasAtraso(missao.dataDevolucao, missao.dataDevolutiva)
-        };
+        // Verificar se foi entregue antecipadamente
+        if (dataDevolucao && dataDevolutiva < dataDevolucao) {
+            const diasAntecipacao = calcularDiasAntecipacao(missao.dataDevolucao, missao.dataDevolutiva);
+            return {
+                status: 'Entregue antecipada',
+                label: `ENTREGUE ANTECIPADA por ${diasAntecipacao} dia(s)`,
+                badgeClass: 'bg-primary',
+                color: '#007bff',
+                diasAtraso: -diasAntecipacao // negativo para indicar antecipação
+            };
+        } else {
+            return {
+                status: 'Concluído',
+                label: 'Concluído',
+                badgeClass: 'bg-success',
+                color: '#28a745',
+                diasAtraso: calcularDiasAtraso(missao.dataDevolucao, missao.dataDevolutiva)
+            };
+        }
     }
 
     if (dataEntrega && hoje < dataEntrega) {
@@ -1752,11 +1790,13 @@ function renderMissoes() {
         const statusInfo = getStatusMissao(m);
         const statusLabel = statusInfo.status === 'Atrasado'
             ? `<span style="color: red; font-weight: bold; margin-left: 10px;"><i class="fas fa-exclamation-triangle"></i> ${statusInfo.label}</span>`
+            : statusInfo.status === 'Entregue antecipada'
+            ? `<span style="color: #007bff; font-weight: bold; margin-left: 10px;"><i class="fas fa-clock"></i> ${statusInfo.label}</span>`
             : `<span style="color: ${statusInfo.color}; font-weight: bold; margin-left: 10px;">${statusInfo.label}</span>`;
 
         // Encontrar índice real na array db.missoes
         const realIdx = db.missoes.indexOf(m);
-        const cardBorder = statusInfo.status === 'Atrasado' ? '#dc3545' : '#ddd';
+        const cardBorder = statusInfo.status === 'Atrasado' ? '#dc3545' : statusInfo.status === 'Entregue antecipada' ? '#007bff' : '#ddd';
 
         return `
         <div class="card mb-2" style="border: 1px solid ${cardBorder};">
@@ -3015,31 +3055,23 @@ function gerarRelatorioUso() {
                 }
             }
             
-            // Verificar se foi entregue com atraso
-            let statusAtraso = '';
+            // Usar a função getStatusMissao para determinar o status correto
+            const statusInfo = getStatusMissao(missao);
+            let statusAtraso = statusInfo.label;
             let classeAtraso = '';
             
-            if ((missao.dataDevolucao || missao.dataDevolutiva) && missao.dataEntrega) {
-                const dataDev = parseDataISO(missao.dataDevolucao || missao.dataDevolutiva);
-                const dataEnt = parseDataISO(missao.dataEntrega);
-                dataDev.setHours(0, 0, 0, 0);
-                dataEnt.setHours(0, 0, 0, 0);
-                
-                if (dataDev > dataEnt) {
-                    statusAtraso = 'Entregue em atraso';
-                    classeAtraso = 'style="background-color: #ffe0e0; border-left: 4px solid #dc3545;"';
-                } else {
-                    statusAtraso = 'Entregue no prazo';
-                }
-            } else if (!missao.dataDevolucao && !missao.dataDevolutiva) {
-                statusAtraso = 'Em uso / Não devolvida';
+            if (statusInfo.status === 'Atrasado') {
+                classeAtraso = 'style="background-color: #ffe0e0; border-left: 4px solid #dc3545;"';
+            } else if (statusInfo.status === 'Entregue antecipada') {
+                classeAtraso = 'style="background-color: #e3f2fd; border-left: 4px solid #007bff;"';
+            } else if (statusInfo.status === 'Em Uso') {
                 classeAtraso = 'style="background-color: #fff3cd; border-left: 4px solid #ffc107;"';
             }
             
             const nomeMotorista = missao.motorista ? missao.motorista.nome : 'Sem motorista';
             const descricaoVeiculo = `${missao.veiculo.placa} (${missao.veiculo.marca} ${missao.veiculo.modelo})`;
             
-            html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega}</td><td>${dataDevolucao}</td><td><span class="badge ${statusAtraso.includes('atraso') ? 'bg-danger' : statusAtraso.includes('não') ? 'bg-warning' : 'bg-success'}">${statusAtraso}</span></td><td>${statusAtraso}</td><td>${podeEditar() ? `<button onclick="editarDataHoraDevolucao(${realIdx})" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Editar</button> <button onclick="excluirMissaoRelatorio(${realIdx})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Excluir</button>` : ''}</td></tr>`;
+            html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega}</td><td>${dataDevolucao}</td><td><span class="badge ${statusInfo.badgeClass}">${statusAtraso}</span></td><td>${statusAtraso}</td><td>${podeEditar() ? `<button onclick="editarDataHoraDevolucao(${realIdx})" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Editar</button> <button onclick="excluirMissaoRelatorio(${realIdx})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Excluir</button>` : ''}</td></tr>`;
         });
         html += '</tbody></table>';
     }
@@ -3167,7 +3199,7 @@ function gerarRelatorioMotoristas() {
     missoesFiltradas.forEach(missao => {
         const realIdx = db.missoes.indexOf(missao);
         const statusInfo = getStatusMissao(missao);
-        const status = statusInfo.status === 'Atrasado' ? 'Atrasado' : statusInfo.status === 'Concluído' ? 'Concluído' : statusInfo.status === 'Agendada' ? 'Agendada' : 'Em andamento';
+        const status = statusInfo.status;
 
         let dataDevolucaoDisplay = formatarData(missao.dataDevolucao);
         if (missao.dataDevolutiva && missao.dataDevolutiva.includes('T')) {
@@ -3180,7 +3212,7 @@ function gerarRelatorioMotoristas() {
             <td>${missao.veiculo.placa}</td>
             <td>${formatarData(missao.dataInicio)}</td>
             <td>${dataDevolucaoDisplay}</td>
-            <td><span class="badge ${status === 'Atrasado' ? 'bg-danger' : status === 'Concluído' ? 'bg-success' : status === 'Agendada' ? 'bg-info' : 'bg-warning'}">${status}</span></td>
+            <td><span class="badge ${statusInfo.badgeClass}">${statusInfo.label}</span></td>
             <td>${podeEditar() ? `<button onclick="excluirMissaoRelatorio(${realIdx})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Excluir</button>` : ''}</td>
         </tr>`;
     });
