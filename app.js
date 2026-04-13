@@ -2467,7 +2467,8 @@ function devolverMissao(index) {
     const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
     
     db.missoes[index].ativo = false;
-    db.missoes[index].dataDevolutiva = new Date().toISOString().split('T')[0];
+    const hoje = new Date();
+    db.missoes[index].dataDevolutiva = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
     db.veiculos.forEach(v => {
         if (v.placa === db.missoes[index].veiculo.placa) {
             v.status = 'disponivel';
