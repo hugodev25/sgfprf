@@ -2892,14 +2892,11 @@ function gerarRelatorioUso() {
         
         missoesFiltradas.forEach(missao => {
             // Formatar data de pega
-            const dataPegaObj = parseDataISO(missao.dataInicio);
-            const dataPega = dataPegaObj ? dataPegaObj.toLocaleDateString('pt-BR') : 'Data inválida';
-            const horaPega = dataPegaObj ? dataPegaObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '';
+            const dataPega = formatarData(missao.dataInicio);
             
             // Formatar data de devolução (pode ser dataDevolucao ou dataDevolutiva)
-            const dataDevObj = missao.dataDevolucao ? parseDataISO(missao.dataDevolucao) : (missao.dataDevolutiva ? parseDataISO(missao.dataDevolutiva) : null);
-            const dataDevolucao = dataDevObj ? dataDevObj.toLocaleDateString('pt-BR') : 'Não devolvida';
-            const horaDevolucao = dataDevObj ? dataDevObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '';
+            const dataDevolucaoStr = missao.dataDevolucao || missao.dataDevolutiva;
+            const dataDevolucao = dataDevolucaoStr ? formatarData(dataDevolucaoStr) : 'Não devolvida';
             
             // Verificar se foi entregue com atraso
             let statusAtraso = '';
@@ -3057,8 +3054,8 @@ function gerarRelatorioMotoristas() {
         html += `<tr>
             <td>${missao.motorista.nome}</td>
             <td>${missao.veiculo.placa}</td>
-            <td>${parseDataISO(missao.dataInicio).toLocaleDateString('pt-BR')}</td>
-            <td>${parseDataISO(missao.dataDevolucao).toLocaleDateString('pt-BR')}</td>
+            <td>${formatarData(missao.dataInicio)}</td>
+            <td>${formatarData(missao.dataDevolucao)}</td>
             <td><span class="badge ${status === 'Atrasado' ? 'bg-danger' : status === 'Concluído' ? 'bg-success' : status === 'Agendada' ? 'bg-info' : 'bg-warning'}">${status}</span></td>
         </tr>`;
     });
