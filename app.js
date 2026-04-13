@@ -3074,6 +3074,13 @@ function gerarRelatorioUso() {
             html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega}</td><td>${dataDevolucao}</td><td><span class="badge ${statusInfo.badgeClass}">${statusAtraso}</span></td><td>${statusAtraso}</td><td>${podeEditar() ? `<button onclick="editarDataHoraDevolucao(${realIdx})" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Editar</button> <button onclick="excluirMissaoRelatorio(${realIdx})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Excluir</button>` : ''}</td></tr>`;
         });
         html += '</tbody></table>';
+        
+        // Adicionar botão de exportar PDF
+        html += '<div class="mt-3 text-end">';
+        html += '<button onclick="exportarRelatorioPDF(\'relatorioUso\', \'relatorio-uso-veiculos.pdf\')" class="btn btn-danger">';
+        html += '<i class="fas fa-file-pdf"></i> Exportar PDF';
+        html += '</button>';
+        html += '</div>';
     }
 
     relatorioDiv.innerHTML = html;
@@ -3111,6 +3118,14 @@ function gerarRelatorioStatusVeiculos() {
     });
 
     html += '</tbody></table>';
+    
+    // Adicionar botão de exportar PDF
+    html += '<div class="mt-3 text-end">';
+    html += '<button onclick="exportarRelatorioPDF(\'relatorioStatusVeiculos\', \'relatorio-status-veiculos.pdf\')" class="btn btn-danger">';
+    html += '<i class="fas fa-file-pdf"></i> Exportar PDF';
+    html += '</button>';
+    html += '</div>';
+    
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3152,6 +3167,14 @@ function gerarRelatorioTrocaOleo() {
     });
 
     html += '</tbody></table>';
+    
+    // Adicionar botão de exportar PDF
+    html += '<div class="mt-3 text-end">';
+    html += '<button onclick="exportarRelatorioPDF(\'relatorioTrocaOleo\', \'relatorio-troca-oleo.pdf\')" class="btn btn-danger">';
+    html += '<i class="fas fa-file-pdf"></i> Exportar PDF';
+    html += '</button>';
+    html += '</div>';
+    
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3218,6 +3241,14 @@ function gerarRelatorioMotoristas() {
     });
 
     html += '</tbody></table>';
+    
+    // Adicionar botão de exportar PDF
+    html += '<div class="mt-3 text-end">';
+    html += '<button onclick="exportarRelatorioPDF(\'relatorioMotoristas\', \'relatorio-motoristas.pdf\')" class="btn btn-danger">';
+    html += '<i class="fas fa-file-pdf"></i> Exportar PDF';
+    html += '</button>';
+    html += '</div>';
+    
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3234,7 +3265,7 @@ function gerarRelatorioListaMotoristas() {
 
     let html = '<h6>Lista Completa de Motoristas</h6>';
     html += '<table class="table table-striped table-sm">';
-    html += '<thead><tr><th>Nome</th><th>Cargo</th><th>CNH</th><th>Telefone</th><th>Missões Ativas</th></tr></thead><tbody>';
+    html += '<thead><tr><th>Nome</th><th></th><th>CNH</th><th>Telefone</th><th>Missões Ativas</th></tr></thead><tbody>';
 
     db.motoristas.forEach(motorista => {
         const missoesAtivas = db.missoes.filter(m => m.motorista.nome === motorista.nome && !m.dataDevolutiva).length;
@@ -3249,6 +3280,14 @@ function gerarRelatorioListaMotoristas() {
     });
 
     html += '</tbody></table>';
+    
+    // Adicionar botão de exportar PDF
+    html += '<div class="mt-3 text-end">';
+    html += '<button onclick="exportarRelatorioPDF(\'relatorioListaMotoristas\', \'relatorio-lista-motoristas.pdf\')" class="btn btn-danger">';
+    html += '<i class="fas fa-file-pdf"></i> Exportar PDF';
+    html += '</button>';
+    html += '</div>';
+    
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3302,6 +3341,14 @@ function gerarRelatorioServicos() {
     });
 
     html += '</tbody></table>';
+    
+    // Adicionar botão de exportar PDF
+    html += '<div class="mt-3 text-end">';
+    html += '<button onclick="exportarRelatorioPDF(\'relatorioServicos\', \'relatorio-servicos.pdf\')" class="btn btn-danger">';
+    html += '<i class="fas fa-file-pdf"></i> Exportar PDF';
+    html += '</button>';
+    html += '</div>';
+    
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3337,6 +3384,14 @@ function gerarRelatorioServicosPendentes() {
     });
 
     html += '</tbody></table>';
+    
+    // Adicionar botão de exportar PDF
+    html += '<div class="mt-3 text-end">';
+    html += '<button onclick="exportarRelatorioPDF(\'relatorioServicosPendentes\', \'relatorio-servicos-pendentes.pdf\')" class="btn btn-danger">';
+    html += '<i class="fas fa-file-pdf"></i> Exportar PDF';
+    html += '</button>';
+    html += '</div>';
+    
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3432,6 +3487,33 @@ function exportarDados() {
 
     exportDiv.innerHTML = '<div class="alert alert-success">Dados exportados com sucesso!</div>';
     exportDiv.style.display = "block";
+}
+
+// ================= FUNÇÃO DE EXPORTAR PDF =================
+
+function exportarRelatorioPDF(elementId, nomeArquivo) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        alert("Erro: Elemento do relatório não encontrado!");
+        return;
+    }
+
+    // Configurações do PDF
+    const opt = {
+        margin: 1,
+        filename: nomeArquivo,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+    };
+
+    // Gerar PDF
+    html2pdf().set(opt).from(element).save().then(() => {
+        console.log('PDF gerado com sucesso!');
+    }).catch(err => {
+        console.error('Erro ao gerar PDF:', err);
+        alert('Erro ao gerar PDF. Tente novamente.');
+    });
 }
 
 // Inicializar select de motoristas no relatório
