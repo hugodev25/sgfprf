@@ -2221,10 +2221,14 @@ function renderAgendamentos() {
 
 // ================= DASHBOARD =================
 function atualizarDashboard() {
+    console.log("📊 Atualizando dashboard...");
+
     const total = db.veiculos.length;
     const disp = db.veiculos.filter(v => v.status === 'disponivel').length;
     const uso = db.veiculos.filter(v => v.status === 'em uso').length;
     const manut = db.veiculos.filter(v => v.status === 'em manutencao').length;
+
+    console.log("📊 Contadores:", { total, disp, uso, manut });
 
     const t = document.getElementById("countTotal");
     const d = document.getElementById("countDisp");
@@ -2245,14 +2249,22 @@ function atualizarDashboard() {
 let chartStatusVeiculos = null;
 
 function atualizarGraficoStatusVeiculos(total, disponivel, emUso, manutencao) {
-    const ctx = document.getElementById('chartStatusVeiculos');
+    console.log("🔄 Iniciando atualização do gráfico:", { total, disponivel, emUso, manutencao });
 
-    if (!ctx) return;
+    const ctx = document.getElementById('chartStatusVeiculos');
+    console.log("📊 Canvas encontrado:", !!ctx);
+
+    if (!ctx) {
+        console.error("❌ Canvas não encontrado!");
+        return;
+    }
 
     // Destruir gráfico anterior se existir
     if (chartStatusVeiculos) {
         chartStatusVeiculos.destroy();
     }
+
+    console.log("📊 Chart.js disponível:", typeof Chart !== 'undefined');
 
     // Cores da PRF
     const cores = {
@@ -2281,6 +2293,8 @@ function atualizarGraficoStatusVeiculos(total, disponivel, emUso, manutencao) {
             hoverOffset: 10
         }]
     };
+
+    console.log("📊 Dados do gráfico:", dados);
 
     // Configurações do gráfico
     const config = {
@@ -2330,6 +2344,7 @@ function atualizarGraficoStatusVeiculos(total, disponivel, emUso, manutencao) {
 
     // Criar gráfico
     chartStatusVeiculos = new Chart(ctx, config);
+    console.log("✅ Gráfico criado com sucesso:", !!chartStatusVeiculos);
 }
 
 // Tornar dashboard interativo
