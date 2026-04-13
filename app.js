@@ -828,8 +828,12 @@ function verificarLocalStorageDisponivel() {
     }
 }
 
-function calcularDiasAtraso(dataDevolucao) {
+function calcularDiasAtraso(dataDevolucao, dataDevolutiva = null) {
     if (!dataDevolucao) return 0;
+
+    // Se a missão já foi devolvida, calcular atraso baseado na data real de devolução
+    const dataComparacao = dataDevolutiva || new Date().toISOString().split('T')[0];
+
     const partes = dataDevolucao.split('-');
     if (partes.length !== 3) return 0;
 
@@ -840,10 +844,15 @@ function calcularDiasAtraso(dataDevolucao) {
     const dataDevolucaoObj = new Date(ano, mes, dia);
     dataDevolucaoObj.setHours(0, 0, 0, 0);
 
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const partesComparacao = dataComparacao.split('T')[0].split('-');
+    const dataComparacaoObj = new Date(
+        parseInt(partesComparacao[0], 10),
+        parseInt(partesComparacao[1], 10) - 1,
+        parseInt(partesComparacao[2], 10)
+    );
+    dataComparacaoObj.setHours(0, 0, 0, 0);
 
-    const diferenca = Math.floor((hoje - dataDevolucaoObj) / (1000 * 60 * 60 * 24));
+    const diferenca = Math.floor((dataComparacaoObj - dataDevolucaoObj) / (1000 * 60 * 60 * 24));
     return diferenca > 0 ? diferenca : 0;
 }
 
@@ -903,7 +912,7 @@ function getStatusMissao(missao) {
             label: 'Concluído',
             badgeClass: 'bg-success',
             color: '#28a745',
-            diasAtraso: calcularDiasAtraso(missao.dataDevolucao)
+            diasAtraso: calcularDiasAtraso(missao.dataDevolucao, missao.dataDevolutiva)
         };
     }
 
@@ -918,7 +927,7 @@ function getStatusMissao(missao) {
     }
 
     if (dataDevolucao) {
-        const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
+        const diasAtraso = calcularDiasAtraso(missao.dataDevolucao, missao.dataDevolutiva);
         if (diasAtraso > 0) {
             return {
                 status: 'Atrasado',
@@ -2523,7 +2532,7 @@ function devolverMissao(index) {
     if (!confirm("Confirmar devolução da viatura?")) return;
     
     const missao = db.missoes[index];
-    const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
+    const diasAtraso = calcularDiasAtraso(missao.dataDevolucao, missao.dataDevolutiva);
     
     db.missoes[index].ativo = false;
     
@@ -2553,6 +2562,24 @@ function excluirMissao(index) {
     db.missoes.splice(index, 1);
     salvarDb();
     renderizar();
+}
+
+function excluirMissaoRelatorio(index) {
+    if (!podeEditar()) return;
+    if (!confirm("Tem certeza que deseja excluir esta missão? Esta ação não pode ser desfeita.")) return;
+    
+    db.missoes.splice(index, 1);
+    salvarDb();
+    
+    // Recarregar o relatório atual
+    const dataInicioEl = document.getElementById("filtroDataInicioUso");
+    const dataFimEl = document.getElementById("filtroDataFimUso");
+    
+    if (dataInicioEl && dataFimEl && dataInicioEl.value && dataFimEl.value) {
+        gerarRelatorioUso();
+    }
+    
+    alert("Missão excluída com sucesso!");
 }
 
 function editarDataHoraDevolucao(index) {
@@ -3012,7 +3039,7 @@ function gerarRelatorioUso() {
             const nomeMotorista = missao.motorista ? missao.motorista.nome : 'Sem motorista';
             const descricaoVeiculo = `${missao.veiculo.placa} (${missao.veiculo.marca} ${missao.veiculo.modelo})`;
             
-            html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega}</td><td>${dataDevolucao}</td><td><span class="badge ${statusAtraso.includes('atraso') ? 'bg-danger' : statusAtraso.includes('não') ? 'bg-warning' : 'bg-success'}">${statusAtraso}</span></td><td>${statusAtraso}</td><td>${missao.dataDevolutiva && podeEditar() ? `<button onclick="editarDataHoraDevolucao(${realIdx})" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Editar</button> <button onclick="excluirMissao(${realIdx})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Excluir</button>` : ''}</td></tr>`;
+            html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega}</td><td>${dataDevolucao}</td><td><span class="badge ${statusAtraso.includes('atraso') ? 'bg-danger' : statusAtraso.includes('não') ? 'bg-warning' : 'bg-success'}">${statusAtraso}</span></td><td>${statusAtraso}</td><td>${podeEditar() ? `<button onclick="editarDataHoraDevolucao(${realIdx})" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Editar</button> <button onclick="excluirMissaoRelatorio(${realIdx})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Excluir</button>` : ''}</td></tr>`;
         });
         html += '</tbody></table>';
     }
@@ -3119,7 +3146,7 @@ function gerarRelatorioMotoristas() {
 
     let html = '<h6>Atividades dos Motoristas</h6>';
     html += '<table class="table table-striped table-sm">';
-    html += '<thead><tr><th>Motorista</th><th>Veículo</th><th>Data Início</th><th>Data/Hora Devolução</th><th>Status</th></tr></thead><tbody>';
+    html += '<thead><tr><th>Motorista</th><th>Veículo</th><th>Data Início</th><th>Data/Hora Devolução</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
 
     const missoesFiltradas = db.missoes.filter(missao => {
         if (!missao.dataInicio) return false;
@@ -3138,6 +3165,7 @@ function gerarRelatorioMotoristas() {
     });
 
     missoesFiltradas.forEach(missao => {
+        const realIdx = db.missoes.indexOf(missao);
         const statusInfo = getStatusMissao(missao);
         const status = statusInfo.status === 'Atrasado' ? 'Atrasado' : statusInfo.status === 'Concluído' ? 'Concluído' : statusInfo.status === 'Agendada' ? 'Agendada' : 'Em andamento';
 
@@ -3153,6 +3181,7 @@ function gerarRelatorioMotoristas() {
             <td>${formatarData(missao.dataInicio)}</td>
             <td>${dataDevolucaoDisplay}</td>
             <td><span class="badge ${status === 'Atrasado' ? 'bg-danger' : status === 'Concluído' ? 'bg-success' : status === 'Agendada' ? 'bg-info' : 'bg-warning'}">${status}</span></td>
+            <td>${podeEditar() ? `<button onclick="excluirMissaoRelatorio(${realIdx})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Excluir</button>` : ''}</td>
         </tr>`;
     });
 
