@@ -722,9 +722,9 @@ function abrirPagina(pagina) {
     // Carregar dados específicos da página
     if (pagina === 'missoes') {
         renderSelectViaturas();
+        preencherSelect("despachoMotorista", db.motoristas.map((m, i) => ({ value: i, text: m.nome })));
         renderAgendamentos();
         renderMissoes();
-        inicializarAutocompleteMissoes();
     } else if (pagina === 'servicos') {
         renderServicosManuencaoAtivos();
     } else if (pagina === 'relatorios') {
@@ -1358,21 +1358,16 @@ function vincularMissao() {
 
     if (!vtr || !mot) return;
 
-    const placaSelecionada = vtr.value.trim().toUpperCase();
-    const mIdx = mot.dataset.index;
+    const vIdx = vtr.value;
+    const mIdx = mot.value;
 
-    if (placaSelecionada === "" || mIdx === undefined) 
-        return alert("Selecione veículo e motorista!");
+    if (vIdx === "" || mIdx === "") return alert("Selecione veículo e motorista!");
 
     if (!dataEntrega || !dataEntrega.value) return alert("Informe a data de entrega!");
     if (!dataDevolucao || !dataDevolucao.value) return alert("Informe a data de devolução!");
 
-    // Procurar veículo pela placa
-    const vIdx = db.veiculos.findIndex(v => v.placa.toUpperCase() === placaSelecionada);
-    if (vIdx === -1) return alert("Veículo não encontrado!");
-
     const veiculo = db.veiculos[vIdx];
-    const motorista = db.motoristas[parseInt(mIdx)];
+    const motorista = db.motoristas[mIdx];
 
     if (!veiculo || !motorista) return alert("Veículo ou motorista inválido!");
 
@@ -1406,7 +1401,6 @@ function vincularMissao() {
     dataDevolucao.value = "";
     vtr.value = "";
     mot.value = "";
-    mot.dataset.index = "";
     
     salvarDb();
     renderizar();
@@ -1423,6 +1417,7 @@ function renderizar(lista = null) {
     preencherSelect("selMarca", db.marcas);
     preencherSelect("selModelo", db.modelos);
     preencherSelect("selCor", db.cores);
+    preencherSelect("despachoMotorista", db.motoristas.map((m, i) => ({ value: i, text: m.nome })));
     
     // Preencher filtros de pesquisa
     preencherSelect("filtroModelo", db.modelos, true); // true para adicionar "Todos os Modelos"
@@ -1435,7 +1430,6 @@ function renderizar(lista = null) {
     renderSelectViaturas();
     renderAgendamentos();
     renderMissoes();
-    inicializarAutocompleteMissoes();
     renderServicosManuencao();
     renderServicosManuencaoAtivos();
     atualizarDashboard();
@@ -1515,97 +1509,6 @@ function preencherSelect(id, lista, adicionarTodos = false) {
                 return `<option value="${item}">${item}</option>`;
             }
         }).join("");
-}
-
-// ================= AUTOCOMPLETE VIATURA E MOTORISTA =================
-function inicializarAutocompleteMissoes() {
-    const inputViatura = document.getElementById("despachoViatura");
-    const inputMotorista = document.getElementById("despachoMotorista");
-    const sugestoesViatura = document.getElementById("sugestoesViatura");
-    const sugestoesMotorista = document.getElementById("sugestoesMotorista");
-
-    if (inputViatura) {
-        inputViatura.addEventListener("input", (e) => {
-            const valor = e.target.value.toLowerCase();
-            const lista = db.veiculos.map((v, i) => ({
-                index: i,
-                texto: `${v.placa} - ${v.marca} ${v.modelo}`,
-                placa: v.placa
-            }));
-
-            if (valor === "") {
-                sugestoesViatura.style.display = "none";
-                return;
-            }
-
-            const filtradas = lista.filter(v => 
-                v.texto.toLowerCase().includes(valor) || 
-                v.placa.toLowerCase().includes(valor)
-            );
-
-            if (filtradas.length > 0) {
-                sugestoesViatura.innerHTML = filtradas.map(v => `
-                    <button class="list-group-item list-group-item-action" type="button" onclick="selecionarViatura(${v.index}, '${v.placa}')">
-                        ${v.texto}
-                    </button>
-                `).join("");
-                sugestoesViatura.style.display = "block";
-            } else {
-                sugestoesViatura.style.display = "none";
-            }
-        });
-    }
-
-    if (inputMotorista) {
-        inputMotorista.addEventListener("input", (e) => {
-            const valor = e.target.value.toLowerCase();
-            const lista = db.motoristas.map((m, i) => ({
-                index: i,
-                texto: m.nome,
-                nome: m.nome
-            }));
-
-            if (valor === "") {
-                sugestoesMotorista.style.display = "none";
-                return;
-            }
-
-            const filtradas = lista.filter(m => 
-                m.texto.toLowerCase().includes(valor)
-            );
-
-            if (filtradas.length > 0) {
-                sugestoesMotorista.innerHTML = filtradas.map(m => `
-                    <button class="list-group-item list-group-item-action" type="button" onclick="selecionarMotorista(${m.index}, '${m.nome}')">
-                        ${m.texto}
-                    </button>
-                `).join("");
-                sugestoesMotorista.style.display = "block";
-            } else {
-                sugestoesMotorista.style.display = "none";
-            }
-        });
-    }
-
-    document.addEventListener("click", (e) => {
-        if (e.target !== inputViatura && !sugestoesViatura.contains(e.target)) {
-            sugestoesViatura.style.display = "none";
-        }
-        if (e.target !== inputMotorista && !sugestoesMotorista.contains(e.target)) {
-            sugestoesMotorista.style.display = "none";
-        }
-    });
-}
-
-function selecionarViatura(index, placa) {
-    document.getElementById("despachoViatura").value = placa;
-    document.getElementById("sugestoesViatura").style.display = "none";
-}
-
-function selecionarMotorista(index, nome) {
-    document.getElementById("despachoMotorista").value = nome;
-    document.getElementById("despachoMotorista").dataset.index = index;
-    document.getElementById("sugestoesMotorista").style.display = "none";
 }
 
 // ================= LISTAGENS =================
