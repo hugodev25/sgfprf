@@ -22,15 +22,31 @@
 // As funções window.db, window.addDoc, window.collection, window.getDocs
 // já estão disponibilizadas globalmente via index.html
 
-// ================= PERMISSÕES =================
-function podeEditar() {
-    return sessaoAtual && sessaoAtual.cargo === 'admin';
-}
+// ================= CONSTANTES =================
+const AUTH_KEYS = {
+    usuarios: "prf_usuarios",
+    sessao: "prf_sessao",
+    ultimaAtividade: "prf_ultima_atividade"
+};
 
 const TEMPO_TIMEOUT = 15 * 60 * 1000; // 15 minutos de inatividade
 const TEMPO_AVISO = 60 * 1000; // Avisar 1 minuto antes
 let timeoutInterval = null;
 let ultimoAviso = false;
+
+// ================= BANCO DE DADOS =================
+let db = {
+    usuarios: [],
+    marcas: [],
+    modelos: [],
+    cores: [],
+    motoristas: [],
+    veiculos: [],
+    missoes: [],
+    servicos: [],
+    lotacoes: [],
+    servicosVeiculo: []
+};
 
 // ================= ESTADOS DE EDIÇÃO =================
 let estadoEdicao = {
@@ -986,19 +1002,6 @@ function carregarDadosLocalstorage() {
     
     return dados;
 }
-
-let db = {
-    usuarios: [],
-    marcas: [],
-    modelos: [],
-    cores: [],
-    motoristas: [],
-    veiculos: [],
-    missoes: [],
-    servicos: [],
-    lotacoes: [],
-    servicosVeiculo: []
-};
 
 async function carregarDadosFirestore() {
     if (typeof window.db === 'undefined') {
