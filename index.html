@@ -1106,6 +1106,20 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Gráfico de Status dos Veículos -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5><i class="fas fa-chart-pie"></i> Distribuição dos Veículos por Status</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <canvas id="chartStatusVeiculos" width="400" height="200"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1961,6 +1975,7 @@
         });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
