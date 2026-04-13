@@ -722,9 +722,9 @@ function abrirPagina(pagina) {
     // Carregar dados específicos da página
     if (pagina === 'missoes') {
         renderSelectViaturas();
+        preencherSelect("despachoMotorista", db.motoristas.map((m, i) => ({ value: i, text: m.nome })));
         renderAgendamentos();
         renderMissoes();
-        inicializarAutocompleteMissoes();
     } else if (pagina === 'servicos') {
         renderServicosManuencaoAtivos();
     } else if (pagina === 'relatorios') {
@@ -1499,12 +1499,7 @@ async function iniciar() {
 
 // ================= SELECTS =================
 // ================= AUTOCOMPLETE VIATURA E MOTORISTA =================
-let autocompleteMissoesInicializado = false;
-
 function inicializarAutocompleteMissoes() {
-    if (autocompleteMissoesInicializado) return;
-    autocompleteMissoesInicializado = true;
-
     const inputViatura = document.getElementById("despachoViatura");
     const inputMotorista = document.getElementById("despachoMotorista");
     const sugestoesViatura = document.getElementById("sugestoesViatura");
