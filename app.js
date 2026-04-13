@@ -722,9 +722,9 @@ function abrirPagina(pagina) {
     // Carregar dados específicos da página
     if (pagina === 'missoes') {
         renderSelectViaturas();
-        preencherSelect("despachoMotorista", db.motoristas.map((m, i) => ({ value: i, text: m.nome })));
         renderAgendamentos();
         renderMissoes();
+        inicializarAutocompleteMissoes();
     } else if (pagina === 'servicos') {
         renderServicosManuencaoAtivos();
     } else if (pagina === 'relatorios') {
@@ -1498,6 +1498,25 @@ async function iniciar() {
 }
 
 // ================= SELECTS =================
+function preencherSelect(id, lista, adicionarTodos = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    let opcaoInicial = '<option value="">Selecione...</option>';
+    if (adicionarTodos) {
+        opcaoInicial = '<option value="">Todos</option>';
+    }
+
+    el.innerHTML = opcaoInicial +
+        lista.map((item, i) => {
+            if (typeof item === 'object' && item.value !== undefined && item.text !== undefined) {
+                return `<option value="${item.value}">${item.text}</option>`;
+            } else {
+                return `<option value="${item}">${item}</option>`;
+            }
+        }).join("");
+}
+
 // ================= AUTOCOMPLETE VIATURA E MOTORISTA =================
 function inicializarAutocompleteMissoes() {
     const inputViatura = document.getElementById("despachoViatura");
