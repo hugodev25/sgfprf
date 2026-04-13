@@ -50,7 +50,8 @@ var db = {
     missoes: [],
     servicos: [],
     lotacoes: [],
-    servicosVeiculo: []
+    servicosVeiculo: [],
+    atividades: []
 };
 
 // ================= ESTADOS DE EDIÇÃO =================
@@ -343,6 +344,96 @@ function prolongarSessao() {
     ultimoAviso = false;
 }
 
+// ================= SISTEMA DE LOG DE ATIVIDADES =================
+
+function registrarAtividade(acao, detalhes = '', entidade = '', entidadeId = '') {
+    if (!sessaoAtual) return;
+
+    const atividade = {
+        id: Date.now() + Math.random(),
+        usuario: sessaoAtual.usuario,
+        nomeUsuario: sessaoAtual.nome,
+        cargo: sessaoAtual.cargo,
+        acao: acao,
+        detalhes: detalhes,
+        entidade: entidade,
+        entidadeId: entidadeId,
+        dataHora: new Date().toISOString(),
+        timestamp: Date.now()
+    };
+
+    db.atividades.push(atividade);
+
+    // Manter apenas as últimas 1000 atividades para não sobrecarregar
+    if (db.atividades.length > 1000) {
+        db.atividades = db.atividades.slice(-1000);
+    }
+
+    salvar();
+}
+
+// ================= FUNÇÕES DE ATIVIDADES =================
+
+function carregarAtividades() {
+    const filtroData = document.getElementById("filtroDataAtividades").value;
+    const filtroUsuario = document.getElementById("filtroUsuarioAtividades").value;
+    const listaAtividades = document.getElementById("listaAtividades");
+
+    if (!listaAtividades) return;
+
+    let atividadesFiltradas = [...db.atividades];
+
+    // Filtrar por data
+    if (filtroData) {
+        const dataFiltro = new Date(filtroData);
+        const dataFiltroStr = dataFiltro.toISOString().split('T')[0];
+        atividadesFiltradas = atividadesFiltradas.filter(atividade => {
+            const dataAtividade = new Date(atividade.dataHora).toISOString().split('T')[0];
+            return dataAtividade === dataFiltroStr;
+        });
+    }
+
+    // Filtrar por usuário
+    if (filtroUsuario) {
+        atividadesFiltradas = atividadesFiltradas.filter(atividade => atividade.usuario === filtroUsuario);
+    }
+
+    // Ordenar por data (mais recentes primeiro)
+    atividadesFiltradas.sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+
+    if (atividadesFiltradas.length === 0) {
+        listaAtividades.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Nenhuma atividade encontrada com os filtros selecionados.</div>';
+        return;
+    }
+
+    let html = '<div class="table-responsive"><table class="table table-striped table-sm"><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody>';
+
+    atividadesFiltradas.forEach(atividade => {
+        const dataHora = new Date(atividade.dataHora);
+        const dataHoraFormatada = `${dataHora.toLocaleDateString('pt-BR')} ${dataHora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
+
+        let badgeClass = 'bg-secondary';
+        if (atividade.acao.includes('Criado') || atividade.acao.includes('Cadastrado')) badgeClass = 'bg-success';
+        else if (atividade.acao.includes('Editado') || atividade.acao.includes('Alterado')) badgeClass = 'bg-warning';
+        else if (atividade.acao.includes('Excluído') || atividade.acao.includes('Removido')) badgeClass = 'bg-danger';
+        else if (atividade.acao.includes('Login') || atividade.acao.includes('Logout')) badgeClass = 'bg-info';
+
+        html += `<tr>
+            <td>${dataHoraFormatada}</td>
+            <td><strong>${atividade.nomeUsuario}</strong><br><small class="text-muted">${atividade.cargo}</small></td>
+            <td><span class="badge ${badgeClass}">${atividade.acao}</span></td>
+            <td>${atividade.detalhes || '-'}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    listaAtividades.innerHTML = html;
+}
+
+function filtrarAtividadesPorData() {
+    carregarAtividades();
+}
+
 // ================= LOGIN =================
 function fazerLogin(event) {
     event.preventDefault();
@@ -379,6 +470,11 @@ function fazerLogin(event) {
                 dataLogin: new Date().toISOString()
             };
 
+            // Registrar atividade de login
+            setTimeout(() => {
+                registrarAtividade('Login', `Usuário fez login no sistema`, 'sistema', 'login');
+            }, 1000);
+
             localStorage.setItem(AUTH_KEYS.sessao, JSON.stringify(sessaoAtual));
             localStorage.setItem(AUTH_KEYS.ultimaAtividade, Date.now().toString());
 
@@ -402,6 +498,11 @@ function fazerLogin(event) {
 // ================= LOGOUT =================
 function fazerLogout() {
     if (sessaoAtual && !confirm("Tem certeza que deseja sair?")) return false;
+
+    // Registrar atividade de logout antes de limpar a sessão
+    if (sessaoAtual) {
+        registrarAtividade('Logout', `Usuário fez logout do sistema`, 'sistema', 'logout');
+    }
 
     sessaoAtual = null;
     localStorage.removeItem(AUTH_KEYS.sessao);
@@ -427,6 +528,13 @@ function mostrarDashboard() {
     document.getElementById("dashboard").classList.add("active");
     document.getElementById("nomeUsuario").textContent = sessaoAtual.nome;
     document.getElementById("cargoUsuario").textContent = `(${sessaoAtual.cargo.toUpperCase()})`;
+
+    // Mostrar/esconder seção de administrador baseada nas permissões
+    const adminSection = document.getElementById("adminSection");
+    if (adminSection) {
+        adminSection.style.display = podeEditar() ? "block" : "none";
+    }
+
     renderizar();
 }
 
@@ -729,6 +837,8 @@ function abrirPagina(pagina) {
         renderServicosManuencaoAtivos();
     } else if (pagina === 'relatorios') {
         atualizarDashboard();
+    } else if (pagina === 'atividades') {
+        carregarAtividades();
     }
 
     // Adicionar classe active ao nav-item clicado
@@ -1158,18 +1268,245 @@ function diagnosticarBancoDados() {
     console.log("======================================");
 }
 
+// ================= RELATÓRIO COMPLETO DO SISTEMA =================
+
+function gerarRelatorioCompletoSistema() {
+    if (typeof window.db === 'undefined') {
+        alert("Sistema ainda inicializando. Aguarde alguns segundos e tente novamente.");
+        return;
+    }
+
+    // Criar container temporário para o relatório
+    const tempDiv = document.createElement('div');
+    tempDiv.id = 'relatorioCompletoSistema';
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '-9999px';
+    document.body.appendChild(tempDiv);
+
+    let html = `<div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h1 style="text-align: center; color: #002244; border-bottom: 2px solid #ffcc00; padding-bottom: 10px;">
+            <i class="fas fa-file-alt"></i> RELATÓRIO COMPLETO DO SISTEMA SGF-PRF
+        </h1>
+        <p style="text-align: center; font-size: 14px; color: #666;">
+            Gerado em: ${new Date().toLocaleString('pt-BR')}
+        </p>`;
+
+    // 1. ESTATÍSTICAS GERAIS
+    html += `<h2 style="color: #002244; margin-top: 30px; border-left: 4px solid #ffcc00; padding-left: 10px;">
+        <i class="fas fa-chart-bar"></i> ESTATÍSTICAS GERAIS
+    </h2>`;
+
+    const totalVeiculos = db.veiculos.length;
+    const veiculosDisponiveis = db.veiculos.filter(v => v.status === 'disponivel').length;
+    const veiculosEmUso = db.veiculos.filter(v => v.status === 'em uso').length;
+    const veiculosManutencao = db.veiculos.filter(v => v.status === 'em manutencao').length;
+
+    const totalMotoristas = db.motoristas.length;
+    const missoesAtivas = db.missoes.filter(m => !m.dataDevolutiva).length;
+    const missoesConcluidas = db.missoes.filter(m => m.dataDevolutiva).length;
+
+    const servicosTotais = db.servicosVeiculo.length;
+    const servicosConcluidos = db.servicosVeiculo.filter(s => s.status === 'concluido').length;
+    const servicosPendentes = db.servicosVeiculo.filter(s => s.status === 'pendente').length;
+
+    html += `<div style="display: flex; gap: 20px; margin: 20px 0;">
+        <div style="flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #f8f9fa;">
+            <h4 style="color: #002244; margin: 0 0 10px 0;"><i class="fas fa-car"></i> Veículos (${totalVeiculos})</h4>
+            <p><strong>Disponíveis:</strong> <span style="color: #28a745;">${veiculosDisponiveis}</span></p>
+            <p><strong>Em Uso:</strong> <span style="color: #ffc107;">${veiculosEmUso}</span></p>
+            <p><strong>Em Manutenção:</strong> <span style="color: #dc3545;">${veiculosManutencao}</span></p>
+        </div>
+        <div style="flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #f8f9fa;">
+            <h4 style="color: #002244; margin: 0 0 10px 0;"><i class="fas fa-users"></i> Motoristas (${totalMotoristas})</h4>
+            <p><strong>Missões Ativas:</strong> <span style="color: #17a2b8;">${missoesAtivas}</span></p>
+            <p><strong>Missões Concluídas:</strong> <span style="color: #28a745;">${missoesConcluidas}</span></p>
+        </div>
+        <div style="flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #f8f9fa;">
+            <h4 style="color: #002244; margin: 0 0 10px 0;"><i class="fas fa-tools"></i> Serviços (${servicosTotais})</h4>
+            <p><strong>Concluídos:</strong> <span style="color: #28a745;">${servicosConcluidos}</span></p>
+            <p><strong>Pendentes:</strong> <span style="color: #ffc107;">${servicosPendentes}</span></p>
+        </div>
+    </div>`;
+
+    // 2. LISTA DE VEÍCULOS
+    html += `<h2 style="color: #002244; margin-top: 30px; border-left: 4px solid #ffcc00; padding-left: 10px;">
+        <i class="fas fa-car"></i> VEÍCULOS CADASTRADOS
+    </h2>`;
+
+    html += `<table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px;">
+        <thead>
+            <tr style="background: #002244; color: white;">
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Placa</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Modelo</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Status</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Hodômetro</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Próxima Troca Óleo</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    db.veiculos.forEach(veiculo => {
+        const infoOleo = calcularProximaTrocaOleo(veiculo);
+        const statusBadge = getBadgeClass(veiculo.status);
+        const statusLabel = getStatusLabel(veiculo.status);
+
+        html += `<tr>
+            <td style="border: 1px solid #ddd; padding: 8px;"><strong>${veiculo.placa}</strong></td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${veiculo.marca} ${veiculo.modelo}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${statusLabel}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${veiculo.hodometro || 0} km</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${infoOleo.mensagem}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+
+    // 3. LISTA DE MOTORISTAS
+    html += `<h2 style="color: #002244; margin-top: 30px; border-left: 4px solid #ffcc00; padding-left: 10px;">
+        <i class="fas fa-users"></i> MOTORISTAS CADASTRADOS
+    </h2>`;
+
+    html += `<table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px;">
+        <thead>
+            <tr style="background: #002244; color: white;">
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Nome</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Cargo</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Matrícula</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Telefone</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    db.motoristas.forEach(motorista => {
+        html += `<tr>
+            <td style="border: 1px solid #ddd; padding: 8px;"><strong>${motorista.nome}</strong></td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${motorista.cargo || '-'}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${motorista.matricula}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${motorista.telefone || '-'}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+
+    // 4. MISSÕES ATIVAS
+    html += `<h2 style="color: #002244; margin-top: 30px; border-left: 4px solid #ffcc00; padding-left: 10px;">
+        <i class="fas fa-route"></i> MISSÕES ATIVAS
+    </h2>`;
+
+    const missoesAtivasLista = db.missoes.filter(m => !m.dataDevolutiva);
+    if (missoesAtivasLista.length === 0) {
+        html += `<p style="font-style: italic; color: #666;">Nenhuma missão ativa no momento.</p>`;
+    } else {
+        html += `<table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px;">
+            <thead>
+                <tr style="background: #002244; color: white;">
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Veículo</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Motorista</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Data Saída</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Status</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        missoesAtivasLista.forEach(missao => {
+            const statusInfo = getStatusMissao(missao);
+            html += `<tr>
+                <td style="border: 1px solid #ddd; padding: 8px;"><strong>${missao.veiculo.placa}</strong></td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${missao.motorista ? missao.motorista.nome : 'Sem motorista'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${formatarData(missao.dataInicio)}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${statusInfo.label}</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+    }
+
+    // 5. SERVIÇOS PENDENTES
+    html += `<h2 style="color: #002244; margin-top: 30px; border-left: 4px solid #ffcc00; padding-left: 10px;">
+        <i class="fas fa-tools"></i> SERVIÇOS PENDENTES
+    </h2>`;
+
+    const servicosPendentesLista = db.servicosVeiculo.filter(s => s.status === 'pendente');
+    if (servicosPendentesLista.length === 0) {
+        html += `<p style="font-style: italic; color: #666;">Nenhum serviço pendente.</p>`;
+    } else {
+        html += `<table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px;">
+            <thead>
+                <tr style="background: #002244; color: white;">
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Placa</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Tipo</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Descrição</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Data</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Dias em Aberto</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        servicosPendentesLista.forEach(servico => {
+            const dataServico = new Date(servico.data);
+            const hoje = new Date();
+            const diasAberto = Math.floor((hoje - dataServico) / (1000 * 60 * 60 * 24));
+
+            html += `<tr>
+                <td style="border: 1px solid #ddd; padding: 8px;"><strong>${servico.placa}</strong></td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${servico.tipo}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${servico.descricao || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${dataServico.toLocaleDateString('pt-BR')}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #dc3545;"><strong>${diasAberto} dias</strong></td>
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+    }
+
+    html += `<div style="margin-top: 50px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
+        <p>Sistema de Gestão de Frotas - PRF | Relatório gerado automaticamente</p>
+        <p>Data e hora: ${new Date().toLocaleString('pt-BR')}</p>
+    </div>`;
+
+    html += `</div>`;
+
+    tempDiv.innerHTML = html;
+
+    // Configurações do PDF
+    const opt = {
+        margin: 0.5,
+        filename: `relatorio-completo-sistema-${new Date().toISOString().split('T')[0]}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Gerar PDF
+    html2pdf().set(opt).from(tempDiv).save().then(() => {
+        console.log('PDF completo do sistema gerado com sucesso!');
+        // Remover o container temporário
+        document.body.removeChild(tempDiv);
+    }).catch(err => {
+        console.error('Erro ao gerar PDF completo:', err);
+        alert('Erro ao gerar PDF completo do sistema. Tente novamente.');
+        document.body.removeChild(tempDiv);
+    });
+}
+
 // Função para forçar salvamento
 function forcarSalvarDados() {
     console.log("🔄 Forçando salvamento de dados...");
-    
+
     if (salvar()) {
+        // Registrar atividade de backup
+        registrarAtividade('Backup', 'Forçou salvamento de todos os dados do sistema', 'sistema', 'backup');
+
         const msg = document.getElementById("mensagemDiagnostico");
         msg.innerHTML = '<div class="alert alert-success" style="margin-bottom: 0;"><i class="fas fa-check-circle"></i> ✅ Todos os dados foram salvos com sucesso!</div>';
         msg.style.display = "block";
-        
+
+        // Gerar PDF com todas as informações do sistema
         setTimeout(() => {
+            gerarRelatorioCompletoSistema();
             msg.style.display = "none";
-        }, 3000);
+        }, 1000);
     } else {
         const msg = document.getElementById("mensagemDiagnostico");
         msg.innerHTML = '<div class="alert alert-danger" style="margin-bottom: 0;"><i class="fas fa-exclamation-circle"></i> ❌ Erro ao salvar dados. Verifique o console (F12).</div>';
@@ -1242,6 +1579,31 @@ function verificarERepararDados() {
 
 // Função para limpar todos os dados
 function limparTodosDados() {
+    // Verificar se usuário é administrador
+    if (!podeEditar()) {
+        alert("❌ Acesso negado!\n\nApenas usuários administradores podem executar esta ação.");
+        return;
+    }
+
+    // Pedir usuário e senha para confirmação adicional
+    const usuario = prompt("🔐 Confirmação de Segurança\n\nDigite seu usuário:");
+    if (!usuario) return;
+
+    const senha = prompt("🔐 Confirmação de Segurança\n\nDigite sua senha:");
+    if (!senha) return;
+
+    // Verificar credenciais
+    const usuarioValido = db.usuarios.find(u => u.usuario === usuario && u.senha === senha);
+    if (!usuarioValido) {
+        alert("❌ Credenciais inválidas!\n\nUsuário ou senha incorretos.");
+        return;
+    }
+
+    if (usuarioValido.cargo !== 'admin') {
+        alert("❌ Acesso negado!\n\nApenas administradores podem executar esta ação.");
+        return;
+    }
+
     const confirmacao = confirm(
         "⚠️ ATENÇÃO! Isto vai deletar TODOS os dados:\n" +
         "- Viaturas\n" +
@@ -1271,6 +1633,9 @@ function limparTodosDados() {
     db.missoes = [];
     db.servicos = [];
     db.servicosVeiculo = [];
+    
+    // Registrar atividade de limpeza de dados
+    registrarAtividade('Limpeza Total', 'Apagou todos os dados do sistema (admin)', 'sistema', 'limpeza');
     
     // Salvar
     if (salvar()) {
@@ -3083,6 +3448,12 @@ function gerarRelatorioUso() {
         html += '</div>';
     }
 
+    // Se o relatório já está sendo exibido, apenas feche-o
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+        return;
+    }
+
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3126,6 +3497,12 @@ function gerarRelatorioStatusVeiculos() {
     html += '</button>';
     html += '</div>';
     
+    // Se o relatório já está sendo exibido, apenas feche-o
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+        return;
+    }
+
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3175,6 +3552,12 @@ function gerarRelatorioTrocaOleo() {
     html += '</button>';
     html += '</div>';
     
+    // Se o relatório já está sendo exibido, apenas feche-o
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+        return;
+    }
+
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3249,6 +3632,12 @@ function gerarRelatorioMotoristas() {
     html += '</button>';
     html += '</div>';
     
+    // Se o relatório já está sendo exibido, apenas feche-o
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+        return;
+    }
+
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3288,6 +3677,12 @@ function gerarRelatorioListaMotoristas() {
     html += '</button>';
     html += '</div>';
     
+    // Se o relatório já está sendo exibido, apenas feche-o
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+        return;
+    }
+
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3349,6 +3744,12 @@ function gerarRelatorioServicos() {
     html += '</button>';
     html += '</div>';
     
+    // Se o relatório já está sendo exibido, apenas feche-o
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+        return;
+    }
+
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3392,6 +3793,12 @@ function gerarRelatorioServicosPendentes() {
     html += '</button>';
     html += '</div>';
     
+    // Se o relatório já está sendo exibido, apenas feche-o
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+        return;
+    }
+
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3454,6 +3861,20 @@ function gerarRelatorioEstatisticas() {
     html += '</div></div></div>';
 
     html += '</div>';
+    
+    // Adicionar botão de exportar PDF
+    html += '<div class="mt-3 text-end">';
+    html += '<button onclick="exportarRelatorioPDF(\'relatorioEstatisticas\', \'relatorio-estatisticas.pdf\')" class="btn btn-danger">';
+    html += '<i class="fas fa-file-pdf"></i> Exportar PDF';
+    html += '</button>';
+    html += '</div>';
+    
+    // Se o relatório já está sendo exibido, apenas feche-o
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+        return;
+    }
+
     relatorioDiv.innerHTML = html;
     relatorioDiv.style.display = "block";
 }
@@ -3491,6 +3912,14 @@ function exportarDados() {
 
 // ================= FUNÇÃO DE EXPORTAR PDF =================
 
+function toggleRelatorio(relatorioDiv) {
+    if (relatorioDiv.style.display === "block") {
+        relatorioDiv.style.display = "none";
+    } else {
+        relatorioDiv.style.display = "block";
+    }
+}
+
 function exportarRelatorioPDF(elementId, nomeArquivo) {
     const element = document.getElementById(elementId);
     if (!element) {
@@ -3522,6 +3951,17 @@ function inicializarRelatorios() {
     if (selectMotorista) {
         selectMotorista.innerHTML = '<option value="">Todos os motoristas</option>' +
             db.motoristas.map(m => `<option value="${m.nome}">${m.nome}</option>`).join("");
+    }
+
+    // Inicializar filtro de usuários para atividades
+    const selectUsuarioAtividades = document.getElementById("filtroUsuarioAtividades");
+    if (selectUsuarioAtividades) {
+        const usuariosUnicos = [...new Set(db.atividades.map(a => a.usuario))];
+        selectUsuarioAtividades.innerHTML = '<option value="">Todos os usuários</option>' +
+            usuariosUnicos.map(u => {
+                const atividade = db.atividades.find(a => a.usuario === u);
+                return `<option value="${u}">${atividade ? atividade.nomeUsuario : u}</option>`;
+            }).join("");
     }
 }
 
