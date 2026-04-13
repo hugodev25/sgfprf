@@ -2235,6 +2235,101 @@ function atualizarDashboard() {
     if (d) d.innerText = disp;
     if (u) u.innerText = uso;
     if (m) m.innerText = manut;
+
+    // Atualizar gráfico
+    atualizarGraficoStatusVeiculos(total, disp, uso, manut);
+}
+
+// ================= GRÁFICO DO DASHBOARD =================
+
+let chartStatusVeiculos = null;
+
+function atualizarGraficoStatusVeiculos(total, disponivel, emUso, manutencao) {
+    const ctx = document.getElementById('chartStatusVeiculos');
+
+    if (!ctx) return;
+
+    // Destruir gráfico anterior se existir
+    if (chartStatusVeiculos) {
+        chartStatusVeiculos.destroy();
+    }
+
+    // Cores da PRF
+    const cores = {
+        disponivel: '#28a745', // Verde
+        emUso: '#ffc107',      // Amarelo
+        manutencao: '#dc3545', // Vermelho
+        outros: '#6c757d'      // Cinza
+    };
+
+    // Dados do gráfico
+    const dados = {
+        labels: ['Disponíveis', 'Em Uso', 'Em Manutenção'],
+        datasets: [{
+            data: [disponivel, emUso, manutencao],
+            backgroundColor: [
+                cores.disponivel,
+                cores.emUso,
+                cores.manutencao
+            ],
+            borderColor: [
+                cores.disponivel,
+                cores.emUso,
+                cores.manutencao
+            ],
+            borderWidth: 2,
+            hoverOffset: 10
+        }]
+    };
+
+    // Configurações do gráfico
+    const config = {
+        type: 'doughnut',
+        data: dados,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%', // Centro mais transparente
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    },
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#002244',
+                    borderWidth: 1
+                }
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    };
+
+    // Criar gráfico
+    chartStatusVeiculos = new Chart(ctx, config);
 }
 
 // Tornar dashboard interativo
