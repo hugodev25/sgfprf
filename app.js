@@ -22,12 +22,10 @@
 // As funções window.db, window.addDoc, window.collection, window.getDocs
 // já estão disponibilizadas globalmente via index.html
 
-// ================= CONSTANTES =================
-const AUTH_KEYS = {
-    usuarios: "prf_usuarios",
-    sessao: "prf_sessao",
-    ultimaAtividade: "prf_ultima_atividade"
-};
+// ================= PERMISSÕES =================
+function podeEditar() {
+    return sessaoAtual && sessaoAtual.cargo === 'admin';
+}
 
 const TEMPO_TIMEOUT = 15 * 60 * 1000; // 15 minutos de inatividade
 const TEMPO_AVISO = 60 * 1000; // Avisar 1 minuto antes
@@ -428,6 +426,56 @@ function fecharModalCadastro() {
     document.getElementById("successMessage").classList.remove("show");
 }
 
+// ================= MODAL DATA/HORA DEVOLUÇÃO =================
+let callbackDataHora = null;
+
+function obterDataHoraDevolucao(dataAtual = null, callback) {
+    callbackDataHora = callback;
+    const modal = document.getElementById("modalDataHoraDevolucao");
+    const dataInput = document.getElementById("dataDevolucao");
+    const horaInput = document.getElementById("horaDevolucao");
+    
+    if (dataAtual) {
+        const dataStr = dataAtual.split('T')[0];
+        const horaStr = dataAtual.split('T')[1] ? dataAtual.split('T')[1].substring(0,5) : '';
+        dataInput.value = dataStr;
+        horaInput.value = horaStr;
+    } else {
+        // Set current date/time
+        const now = new Date();
+        dataInput.value = now.toISOString().split('T')[0];
+        horaInput.value = now.toTimeString().substring(0,5);
+    }
+    
+    modal.classList.add("active");
+}
+
+function confirmarDataHoraDevolucao(event) {
+    event.preventDefault();
+    const data = document.getElementById("dataDevolucao").value;
+    const hora = document.getElementById("horaDevolucao").value;
+    
+    if (!data || !hora) {
+        document.getElementById("errorDataHoraMessage").textContent = "Preencha data e hora.";
+        return;
+    }
+    
+    const dataObj = new Date(`${data}T${hora}:00`);
+    const iso = dataObj.toISOString();
+    
+    fecharModalDataHoraDevolucao();
+    
+    if (callbackDataHora) {
+        callbackDataHora(iso);
+        callbackDataHora = null;
+    }
+}
+
+function fecharModalDataHoraDevolucao() {
+    document.getElementById("modalDataHoraDevolucao").classList.remove("active");
+    document.getElementById("errorDataHoraMessage").textContent = "";
+}
+
 // ================= CRIAR CONTA =================
 function criarConta(event) {
     event.preventDefault();
@@ -796,51 +844,6 @@ function formatarData(dataStr) {
     const partes = dataStr.split('-');
     if (partes.length !== 3) return dataStr;
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
-}
-
-function obterDataHoraDevolucao(dataAtual = null) {
-    let data = dataAtual ? formatarData(dataAtual.split('T')[0]) : '';
-    let hora = dataAtual ? dataAtual.split('T')[1].substring(0,5) : '';
-    
-    data = prompt("Digite a data de devolução (DD/MM/YYYY):", data);
-    if (!data) return null;
-    
-    hora = prompt("Digite a hora de devolução (HH:MM):", hora);
-    if (!hora) return null;
-    
-    // Validar formato
-    const partesData = data.split('/');
-    if (partesData.length !== 3) {
-        alert("Formato de data inválido. Use DD/MM/YYYY");
-        return null;
-    }
-    
-    const dia = parseInt(partesData[0]);
-    const mes = parseInt(partesData[1]) - 1;
-    const ano = parseInt(partesData[2]);
-    
-    if (isNaN(dia) || isNaN(mes) || isNaN(ano) || dia < 1 || dia > 31 || mes < 0 || mes > 11) {
-        alert("Data inválida");
-        return null;
-    }
-    
-    const partesHora = hora.split(':');
-    if (partesHora.length !== 2) {
-        alert("Formato de hora inválido. Use HH:MM");
-        return null;
-    }
-    
-    const horas = parseInt(partesHora[0]);
-    const minutos = parseInt(partesHora[1]);
-    
-    if (isNaN(horas) || isNaN(minutos) || horas < 0 || horas > 23 || minutos < 0 || minutos > 59) {
-        alert("Hora inválida");
-        return null;
-    }
-    
-    // Criar data local
-    const dataObj = new Date(ano, mes, dia, horas, minutos);
-    return dataObj.toISOString();
 }
 
 function periodoSobreposto(inicioA, fimA, inicioB, fimB) {
@@ -1549,11 +1552,12 @@ function renderVeiculos(filtros = {}) {
                             <button onclick="cancelarEdicaoVeiculo('${v.placa}')" class="btn btn-sm btn-outline-secondary" title="Cancelar">
                                 <i class="fas fa-times"></i> Cancelar
                             </button>
-                        ` : `
+                        ` : podeEditar() ? `
                             <button onclick="iniciarEdicaoVeiculo('${v.placa}')" class="btn btn-sm btn-outline-primary" title="Editar placa">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
-                        `}
+                        ` : ''}
+                    </div>
                     </div>
                     <button onclick="abrirInfoServicos('${v.placa}')" class="btn btn-sm" style="background: #0b3d91; color: white; border: none; padding: 5px 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;" title="Informações e Serviços">
                         <i class="fas fa-cog"></i>
@@ -1668,14 +1672,14 @@ function renderMotoristas() {
                         <button onclick="cancelarEdicaoMotorista(${i})" class="btn btn-sm btn-outline-secondary me-2">
                             <i class="fas fa-times"></i> Cancelar
                         </button>
-                    ` : `
+                    ` : podeEditar() ? `
                         <button onclick="iniciarEdicaoMotorista(${i})" class="btn btn-sm btn-outline-primary me-2">
                             <i class="fas fa-edit"></i> Editar
                         </button>
-                    `}
-                    <button onclick="excluirMotorista(${i})" class="btn btn-sm btn-outline-danger">
+                    ` : ''}
+                    ${podeEditar() ? `<button onclick="excluirMotorista(${i})" class="btn btn-sm btn-outline-danger">
                         <i class="fas fa-trash"></i> Excluir
-                    </button>
+                    </button>` : ''}
                 </div>
             </div>
         </div>
@@ -1706,14 +1710,14 @@ function renderLista(id, lista, tipo) {
     el.innerHTML = lista.map((item, i) => `
         <div class="d-flex justify-content-between align-items-center mb-2">
             <input type="text" id="input${tipo}${i}" value="${item}" 
-                   class="form-control" style="width: 200px; margin-right: 10px;" placeholder="${tipo}">
+                   class="form-control" style="width: 200px; margin-right: 10px;" placeholder="${tipo}" ${podeEditar() ? '' : 'disabled'}>
             <div>
-                <button onclick="salvarAuxiliar('${tipo}', ${i})" class="btn btn-sm btn-outline-success me-1">
+                ${podeEditar() ? `<button onclick="salvarAuxiliar('${tipo}', ${i})" class="btn btn-sm btn-outline-success me-1">
                     <i class="fas fa-check"></i>
                 </button>
                 <button onclick="excluirAuxiliar('${tipo}', ${i})" class="btn btn-sm btn-outline-danger">
                     <i class="fas fa-trash"></i>
-                </button>
+                </button>` : ''}
             </div>
         </div>
     `).join("");
@@ -1748,9 +1752,9 @@ function renderMissoes() {
                     <button onclick="devolverMissao(${realIdx})" class="btn btn-sm btn-outline-success">
                         <i class="fas fa-check"></i> Devolver
                     </button>
-                    <button onclick="excluirMissao(${realIdx})" class="btn btn-sm btn-outline-danger">
+                    ${podeEditar() ? `<button onclick="excluirMissao(${realIdx})" class="btn btn-sm btn-outline-danger">
                         <i class="fas fa-trash"></i> Excluir
-                    </button>
+                    </button>` : ''}
                 </div>
             </div>
         </div>
@@ -1919,7 +1923,7 @@ function abrirInfoServicos(placa) {
         html += `<table class="table table-sm"><thead><tr><th>Data</th><th>Tipo</th><th>Hodômetro</th><th>Descrição</th><th>Status</th><th>Ação</th></tr></thead><tbody>`;
         servicosVeiculo.forEach((s, i) => {
             const statusBadge = s.status === 'pendente' ? '<span class="badge bg-warning">Pendente</span>' : '<span class="badge bg-success">Concluído</span>';
-            html += `<tr><td>${s.data}</td><td>${s.tipo}</td><td>${s.hodometroNaData} km</td><td>${s.descricao || '-'}</td><td>${statusBadge}</td><td><button onclick="excluirServico('${placa}', ${i})" class="btn btn-sm btn-outline-danger">Excluir</button></td></tr>`;
+            html += `<tr><td>${s.data}</td><td>${s.tipo}</td><td>${s.hodometroNaData} km</td><td>${s.descricao || '-'}</td><td>${statusBadge}</td><td>${podeEditar() ? `<button onclick="excluirServico('${placa}', ${i})" class="btn btn-sm btn-outline-danger">Excluir</button>` : ''}</td></tr>`;
         });
         html += `</tbody></table>`;
     }
@@ -1937,7 +1941,7 @@ function abrirInfoServicos(placa) {
             <option value="Outro">Outro</option>
         </select>
         <input type="text" id="descricaoServico" placeholder="Descrição (opcional)" class="form-control mb-2" />
-        <button onclick="adicionarServico('${placa}')" class="btn btn-sm btn-success">Adicionar Serviço</button>
+        ${podeEditar() ? `<button onclick="adicionarServico('${placa}')" class="btn btn-sm btn-success">Adicionar Serviço</button>` : ''}
     </div>`;
     
     const modal = document.createElement('div');
@@ -1953,6 +1957,7 @@ function abrirInfoServicos(placa) {
 }
 
 function adicionarServico(placa) {
+    if (!podeEditar()) return;
     const data = document.getElementById('dataServico').value;
     const tipo = document.getElementById('tipoServico').value;
     const descricao = document.getElementById('descricaoServico').value;
@@ -1975,6 +1980,7 @@ function adicionarServico(placa) {
 }
 
 function excluirServico(placa, index) {
+    if (!podeEditar()) return;
     if (!confirm('Tem certeza?')) return;
     const servicosVeiculo = db.servicosVeiculo.filter(s => s.placa === placa);
     const servicoGlobal = db.servicosVeiculo.findIndex(s => s.placa === placa && 
@@ -2511,43 +2517,39 @@ function devolverMissao(index) {
     const missao = db.missoes[index];
     const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
     
-    // Obter data e hora da devolução
-    const dataHoraDevolucao = obterDataHoraDevolucao();
-    if (!dataHoraDevolucao) {
-        alert("Devolução cancelada.");
-        return;
-    }
-    
     db.missoes[index].ativo = false;
-    db.missoes[index].dataDevolutiva = dataHoraDevolucao;
-    db.veiculos.forEach(v => {
-        if (v.placa === db.missoes[index].veiculo.placa) {
-            v.status = 'disponivel';
+    
+    obterDataHoraDevolucao(null, (dataHora) => {
+        db.missoes[index].dataDevolutiva = dataHora;
+        db.veiculos.forEach(v => {
+            if (v.placa === db.missoes[index].veiculo.placa) {
+                v.status = 'disponivel';
+            }
+        });
+        
+        salvarDb();
+        renderizar();
+        
+        // Mostrar mensagem de sucesso com aviso de atraso se aplicável
+        if (diasAtraso > 0) {
+            alert(`⚠️ Viatura devolvida com sucesso!\n\n🕐 ATENÇÃO: Devolução ATRASADA por ${diasAtraso} dia(s)\nData programada: ${missao.dataDevolucao}\nData de devolução: ${formatarData(dataHora.split('T')[0])} ${dataHora.split('T')[1].substring(0,5)}`);
+        } else {
+            alert("✅ Viatura devolvida com sucesso!");
         }
     });
-    
-    salvarDb();
-    renderizar();
-    
-    // Mostrar mensagem de sucesso com aviso de atraso se aplicável
-    if (diasAtraso > 0) {
-        alert(`⚠️ Viatura devolvida com sucesso!\n\n🕐 ATENÇÃO: Devolução ATRASADA por ${diasAtraso} dia(s)\nData programada: ${missao.dataDevolucao}\nData de devolução: ${formatarData(dataHoraDevolucao.split('T')[0])} ${dataHoraDevolucao.split('T')[1].substring(0,5)}`);
-    } else {
-        alert("✅ Viatura devolvida com sucesso!");
-    }
 }
 
 function editarDataHoraDevolucao(index) {
+    if (!podeEditar()) return;
     const missao = db.missoes[index];
     if (!missao.dataDevolutiva) return;
     
-    const novaDataHora = obterDataHoraDevolucao(missao.dataDevolutiva);
-    if (!novaDataHora) return;
-    
-    db.missoes[index].dataDevolutiva = novaDataHora;
-    salvarDb();
-    renderizar();
-    alert("Data e hora de devolução atualizadas!");
+    obterDataHoraDevolucao(missao.dataDevolutiva, (novaDataHora) => {
+        db.missoes[index].dataDevolutiva = novaDataHora;
+        salvarDb();
+        renderizar();
+        alert("Data e hora de devolução atualizadas!");
+    });
 }
 
 // ================= FUNÇÕES DE ÓLEO =================
@@ -2723,6 +2725,7 @@ function salvarHodometroVeiculo(placa) {
 }
 
 function iniciarEdicaoVeiculo(placa) {
+    if (!podeEditar()) return;
     estadoEdicao.veiculoEmEdicao = placa;
     // Popular o select de cor com as cores disponíveis
     setTimeout(() => {
@@ -2767,6 +2770,7 @@ function salvarCorVeiculo(placa) {
 
 // ================= FUNÇÕES DE EDIÇÃO DE MOTORISTAS =================
 function iniciarEdicaoMotorista(index) {
+    if (!podeEditar()) return;
     estadoEdicao.motoristaEmEdicao = index;
     renderMotoristas();
 }
@@ -2849,6 +2853,7 @@ function excluirMotorista(index) {
 }
 
 function salvarAuxiliar(tipo, index) {
+    if (!podeEditar()) return;
     // Mapear tipo singular para plural
     const tipoPlural = tipo === 'cor' ? 'cores' : tipo === 'lotacao' ? 'lotacoes' : tipo + 's';
     const input = document.getElementById(`input${tipo}${index}`);
@@ -2880,6 +2885,7 @@ function editarAuxiliar(tipo, index) {
 }
 
 function excluirAuxiliar(tipo, index) {
+    if (!podeEditar()) return;
     // Mapear tipo singular para plural
     const tipoPlural = tipo === 'cor' ? 'cores' : tipo === 'lotacao' ? 'lotacoes' : tipo + 's';
     if (!confirm(`Tem certeza que deseja excluir este ${tipo}?`)) return;
@@ -2990,7 +2996,7 @@ function gerarRelatorioUso() {
             const nomeMotorista = missao.motorista ? missao.motorista.nome : 'Sem motorista';
             const descricaoVeiculo = `${missao.veiculo.placa} (${missao.veiculo.marca} ${missao.veiculo.modelo})`;
             
-            html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega}</td><td>${dataDevolucao}</td><td><span class="badge ${statusAtraso.includes('atraso') ? 'bg-danger' : statusAtraso.includes('não') ? 'bg-warning' : 'bg-success'}">${statusAtraso}</span></td><td>${statusAtraso}</td><td>${missao.dataDevolutiva ? `<button onclick="editarDataHoraDevolucao(${realIdx})" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Editar</button>` : ''}</td></tr>`;
+            html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega}</td><td>${dataDevolucao}</td><td><span class="badge ${statusAtraso.includes('atraso') ? 'bg-danger' : statusAtraso.includes('não') ? 'bg-warning' : 'bg-success'}">${statusAtraso}</span></td><td>${statusAtraso}</td><td>${missao.dataDevolutiva && podeEditar() ? `<button onclick="editarDataHoraDevolucao(${realIdx})" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Editar</button>` : ''}</td></tr>`;
         });
         html += '</tbody></table>';
     }
