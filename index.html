@@ -1057,6 +1057,9 @@
                 <div class="nav-item" onclick="abrirPagina('relatorios')">
                     <i class="fas fa-file-pdf"></i><span class="nav-text">Relatórios</span>
                 </div>
+                <div class="nav-item" onclick="abrirPagina('atividades')">
+                    <i class="fas fa-history"></i><span class="nav-text">Atividades</span>
+                </div>
                 <div class="nav-item" onclick="abrirPagina('configuracoes')">
                     <i class="fas fa-cog"></i><span class="nav-text">Configurações</span>
                 </div>
@@ -1688,6 +1691,39 @@
                     </div>
                 </div>
 
+                <div id="pagina-atividades" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-history"></i> Atividades do Sistema</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="filtroDataAtividades" class="form-label">Data:</label>
+                                    <input type="date" class="form-control" id="filtroDataAtividades" onchange="filtrarAtividadesPorData()">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="filtroUsuarioAtividades" class="form-label">Usuário:</label>
+                                    <select class="form-control" id="filtroUsuarioAtividades" onchange="filtrarAtividadesPorData()">
+                                        <option value="">Todos os usuários</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button onclick="carregarAtividades()" class="btn btn-primary d-block">
+                                        <i class="fas fa-sync"></i> Atualizar
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="listaAtividades">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Carregando atividades...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="pagina-configuracoes" style="display:none;">
                     <div class="card">
                         <div class="card-header">
@@ -1743,8 +1779,8 @@
                                         <span style="margin-left: 10px; font-size: 12px; color: #666;">Valida integridade dos dados</span>
                                     </div>
 
-                                    <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #dc3545;">
-                                        <p style="margin: 0; font-size: 13px;"><i class="fas fa-exclamation-triangle"></i> <strong>Limpar todos os dados (CUIDADO!):</strong></p>
+                                    <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #dc3545;" id="adminSection" style="display: none;">
+                                        <p style="margin: 0; font-size: 13px;"><i class="fas fa-exclamation-triangle"></i> <strong>Limpar todos os dados (APENAS ADMIN):</strong></p>
                                         <button onclick="limparTodosDados()" class="btn btn-danger mt-2">
                                             <i class="fas fa-trash"></i> Apagar Todos os Dados
                                         </button>
