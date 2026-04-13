@@ -2892,12 +2892,12 @@ function gerarRelatorioUso() {
         
         missoesFiltradas.forEach(missao => {
             // Formatar data de pega
-            const dataPegaObj = new Date(missao.dataInicio);
-            const dataPega = dataPegaObj.toLocaleDateString('pt-BR');
-            const horaPega = dataPegaObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+            const dataPegaObj = parseDataISO(missao.dataInicio);
+            const dataPega = dataPegaObj ? dataPegaObj.toLocaleDateString('pt-BR') : 'Data inválida';
+            const horaPega = dataPegaObj ? dataPegaObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '';
             
             // Formatar data de devolução (pode ser dataDevolucao ou dataDevolutiva)
-            const dataDevObj = missao.dataDevolucao ? new Date(missao.dataDevolucao) : (missao.dataDevolutiva ? new Date(missao.dataDevolutiva) : null);
+            const dataDevObj = missao.dataDevolucao ? parseDataISO(missao.dataDevolucao) : (missao.dataDevolutiva ? parseDataISO(missao.dataDevolutiva) : null);
             const dataDevolucao = dataDevObj ? dataDevObj.toLocaleDateString('pt-BR') : 'Não devolvida';
             const horaDevolucao = dataDevObj ? dataDevObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '';
             
@@ -2906,8 +2906,8 @@ function gerarRelatorioUso() {
             let classeAtraso = '';
             
             if ((missao.dataDevolucao || missao.dataDevolutiva) && missao.dataEntrega) {
-                const dataDev = new Date(missao.dataDevolucao || missao.dataDevolutiva);
-                const dataEnt = new Date(missao.dataEntrega);
+                const dataDev = parseDataISO(missao.dataDevolucao || missao.dataDevolutiva);
+                const dataEnt = parseDataISO(missao.dataEntrega);
                 dataDev.setHours(0, 0, 0, 0);
                 dataEnt.setHours(0, 0, 0, 0);
                 
@@ -3037,14 +3037,14 @@ function gerarRelatorioMotoristas() {
     const missoesFiltradas = db.missoes.filter(missao => {
         if (!missao.dataInicio) return false;
 
-        let dataMissao = null;
-        if (missao.dataInicio.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            dataMissao = new Date(missao.dataInicio);
-        } else {
-            dataMissao = new Date(missao.dataInicio);
-        }
+        const dataMissao = parseDataISO(missao.dataInicio);
+        if (!dataMissao) return false;
 
-        const dentroPeriodo = dataMissao >= new Date(dataInicio) && dataMissao <= new Date(dataFim);
+        const dataIni = parseDataISO(dataInicio);
+        const dataFin = parseDataISO(dataFim);
+        if (!dataIni || !dataFin) return false;
+
+        const dentroPeriodo = dataMissao >= dataIni && dataMissao <= dataFin;
         const motoristaMatch = !motoristaFiltro || missao.motorista.nome === motoristaFiltro;
 
         return dentroPeriodo && motoristaMatch;
@@ -3057,8 +3057,8 @@ function gerarRelatorioMotoristas() {
         html += `<tr>
             <td>${missao.motorista.nome}</td>
             <td>${missao.veiculo.placa}</td>
-            <td>${new Date(missao.dataInicio).toLocaleDateString('pt-BR')}</td>
-            <td>${new Date(missao.dataDevolucao).toLocaleDateString('pt-BR')}</td>
+            <td>${parseDataISO(missao.dataInicio).toLocaleDateString('pt-BR')}</td>
+            <td>${parseDataISO(missao.dataDevolucao).toLocaleDateString('pt-BR')}</td>
             <td><span class="badge ${status === 'Atrasado' ? 'bg-danger' : status === 'Concluído' ? 'bg-success' : status === 'Agendada' ? 'bg-info' : 'bg-warning'}">${status}</span></td>
         </tr>`;
     });
