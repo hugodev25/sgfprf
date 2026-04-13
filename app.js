@@ -798,6 +798,51 @@ function formatarData(dataStr) {
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
+function obterDataHoraDevolucao(dataAtual = null) {
+    let data = dataAtual ? formatarData(dataAtual.split('T')[0]) : '';
+    let hora = dataAtual ? dataAtual.split('T')[1].substring(0,5) : '';
+    
+    data = prompt("Digite a data de devolução (DD/MM/YYYY):", data);
+    if (!data) return null;
+    
+    hora = prompt("Digite a hora de devolução (HH:MM):", hora);
+    if (!hora) return null;
+    
+    // Validar formato
+    const partesData = data.split('/');
+    if (partesData.length !== 3) {
+        alert("Formato de data inválido. Use DD/MM/YYYY");
+        return null;
+    }
+    
+    const dia = parseInt(partesData[0]);
+    const mes = parseInt(partesData[1]) - 1;
+    const ano = parseInt(partesData[2]);
+    
+    if (isNaN(dia) || isNaN(mes) || isNaN(ano) || dia < 1 || dia > 31 || mes < 0 || mes > 11) {
+        alert("Data inválida");
+        return null;
+    }
+    
+    const partesHora = hora.split(':');
+    if (partesHora.length !== 2) {
+        alert("Formato de hora inválido. Use HH:MM");
+        return null;
+    }
+    
+    const horas = parseInt(partesHora[0]);
+    const minutos = parseInt(partesHora[1]);
+    
+    if (isNaN(horas) || isNaN(minutos) || horas < 0 || horas > 23 || minutos < 0 || minutos > 59) {
+        alert("Hora inválida");
+        return null;
+    }
+    
+    // Criar data local
+    const dataObj = new Date(ano, mes, dia, horas, minutos);
+    return dataObj.toISOString();
+}
+
 function periodoSobreposto(inicioA, fimA, inicioB, fimB) {
     if (!inicioA || !fimA || !inicioB || !fimB) return false;
     return inicioA <= fimB && inicioB <= fimA;
@@ -2466,9 +2511,15 @@ function devolverMissao(index) {
     const missao = db.missoes[index];
     const diasAtraso = calcularDiasAtraso(missao.dataDevolucao);
     
+    // Obter data e hora da devolução
+    const dataHoraDevolucao = obterDataHoraDevolucao();
+    if (!dataHoraDevolucao) {
+        alert("Devolução cancelada.");
+        return;
+    }
+    
     db.missoes[index].ativo = false;
-    const hoje = new Date();
-    db.missoes[index].dataDevolutiva = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0') + '-' + String(hoje.getDate()).padStart(2, '0');
+    db.missoes[index].dataDevolutiva = dataHoraDevolucao;
     db.veiculos.forEach(v => {
         if (v.placa === db.missoes[index].veiculo.placa) {
             v.status = 'disponivel';
@@ -2480,17 +2531,23 @@ function devolverMissao(index) {
     
     // Mostrar mensagem de sucesso com aviso de atraso se aplicável
     if (diasAtraso > 0) {
-        alert(`⚠️ Viatura devolvida com sucesso!\n\n🕐 ATENÇÃO: Devolução ATRASADA por ${diasAtraso} dia(s)\nData programada: ${missao.dataDevolucao}\nData de devolução: ${db.missoes[index].dataDevolutiva}`);
+        alert(`⚠️ Viatura devolvida com sucesso!\n\n🕐 ATENÇÃO: Devolução ATRASADA por ${diasAtraso} dia(s)\nData programada: ${missao.dataDevolucao}\nData de devolução: ${formatarData(dataHoraDevolucao.split('T')[0])} ${dataHoraDevolucao.split('T')[1].substring(0,5)}`);
     } else {
         alert("✅ Viatura devolvida com sucesso!");
     }
 }
 
-function excluirMissao(index) {
-    if (!confirm("Tem certeza que deseja excluir esta missão?")) return;
-    db.missoes.splice(index, 1);
+function editarDataHoraDevolucao(index) {
+    const missao = db.missoes[index];
+    if (!missao.dataDevolutiva) return;
+    
+    const novaDataHora = obterDataHoraDevolucao(missao.dataDevolutiva);
+    if (!novaDataHora) return;
+    
+    db.missoes[index].dataDevolutiva = novaDataHora;
     salvarDb();
     renderizar();
+    alert("Data e hora de devolução atualizadas!");
 }
 
 // ================= FUNÇÕES DE ÓLEO =================
@@ -2888,15 +2945,26 @@ function gerarRelatorioUso() {
     if (missoesFiltradas.length === 0) {
         html += '<p>Nenhuma missão encontrada com os filtros selecionados.</p>';
     } else {
-        html += '<table class="table table-striped table-hover"><thead><tr style="background: linear-gradient(135deg, rgba(11, 61, 145, 0.1) 0%, rgba(255, 204, 0, 0.05) 100%);"><th style="color: #0d3d91; font-weight: 700;">Veículo</th><th style="color: #0d3d91; font-weight: 700;">Motorista</th><th style="color: #0d3d91; font-weight: 700;">Data de Pega</th><th style="color: #0d3d91; font-weight: 700;">Data de Devolução</th><th style="color: #0d3d91; font-weight: 700;">Status</th><th style="color: #0d3d91; font-weight: 700;">Observações</th></tr></thead><tbody>';
+        html += '<table class="table table-striped table-hover"><thead><tr style="background: linear-gradient(135deg, rgba(11, 61, 145, 0.1) 0%, rgba(255, 204, 0, 0.05) 100%);"><th style="color: #0d3d91; font-weight: 700;">Veículo</th><th style="color: #0d3d91; font-weight: 700;">Motorista</th><th style="color: #0d3d91; font-weight: 700;">Data de Pega</th><th style="color: #0d3d91; font-weight: 700;">Data/Hora de Devolução</th><th style="color: #0d3d91; font-weight: 700;">Status</th><th style="color: #0d3d91; font-weight: 700;">Observações</th><th style="color: #0d3d91; font-weight: 700;">Ações</th></tr></thead><tbody>';
         
-        missoesFiltradas.forEach(missao => {
+        missoesFiltradas.forEach((missao, idx) => {
+            // Encontrar índice real
+            const realIdx = db.missoes.indexOf(missao);
             // Formatar data de pega
             const dataPega = formatarData(missao.dataInicio);
             
             // Formatar data de devolução (pode ser dataDevolucao ou dataDevolutiva)
             const dataDevolucaoStr = missao.dataDevolucao || missao.dataDevolutiva;
-            const dataDevolucao = dataDevolucaoStr ? formatarData(dataDevolucaoStr) : 'Não devolvida';
+            let dataDevolucao = 'Não devolvida';
+            if (dataDevolucaoStr) {
+                if (dataDevolucaoStr.includes('T')) {
+                    // Tem hora
+                    const dataObj = new Date(dataDevolucaoStr);
+                    dataDevolucao = `${dataObj.toLocaleDateString('pt-BR')} ${dataObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
+                } else {
+                    dataDevolucao = formatarData(dataDevolucaoStr);
+                }
+            }
             
             // Verificar se foi entregue com atraso
             let statusAtraso = '';
@@ -2922,7 +2990,7 @@ function gerarRelatorioUso() {
             const nomeMotorista = missao.motorista ? missao.motorista.nome : 'Sem motorista';
             const descricaoVeiculo = `${missao.veiculo.placa} (${missao.veiculo.marca} ${missao.veiculo.modelo})`;
             
-            html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega} ${horaPega}</td><td>${dataDevolucao} ${horaDevolucao}</td><td><span class="badge ${statusAtraso.includes('atraso') ? 'bg-danger' : statusAtraso.includes('não') ? 'bg-warning' : 'bg-success'}">${statusAtraso}</span></td><td>${statusAtraso}</td></tr>`;
+            html += `<tr ${classeAtraso}><td><strong>${descricaoVeiculo}</strong></td><td>${nomeMotorista}</td><td>${dataPega}</td><td>${dataDevolucao}</td><td><span class="badge ${statusAtraso.includes('atraso') ? 'bg-danger' : statusAtraso.includes('não') ? 'bg-warning' : 'bg-success'}">${statusAtraso}</span></td><td>${statusAtraso}</td><td>${missao.dataDevolutiva ? `<button onclick="editarDataHoraDevolucao(${realIdx})" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Editar</button>` : ''}</td></tr>`;
         });
         html += '</tbody></table>';
     }
@@ -3029,7 +3097,7 @@ function gerarRelatorioMotoristas() {
 
     let html = '<h6>Atividades dos Motoristas</h6>';
     html += '<table class="table table-striped table-sm">';
-    html += '<thead><tr><th>Motorista</th><th>Veículo</th><th>Data Início</th><th>Data Devolução</th><th>Status</th></tr></thead><tbody>';
+    html += '<thead><tr><th>Motorista</th><th>Veículo</th><th>Data Início</th><th>Data/Hora Devolução</th><th>Status</th></tr></thead><tbody>';
 
     const missoesFiltradas = db.missoes.filter(missao => {
         if (!missao.dataInicio) return false;
@@ -3051,11 +3119,17 @@ function gerarRelatorioMotoristas() {
         const statusInfo = getStatusMissao(missao);
         const status = statusInfo.status === 'Atrasado' ? 'Atrasado' : statusInfo.status === 'Concluído' ? 'Concluído' : statusInfo.status === 'Agendada' ? 'Agendada' : 'Em andamento';
 
+        let dataDevolucaoDisplay = formatarData(missao.dataDevolucao);
+        if (missao.dataDevolutiva && missao.dataDevolutiva.includes('T')) {
+            const dataObj = new Date(missao.dataDevolutiva);
+            dataDevolucaoDisplay = `${dataObj.toLocaleDateString('pt-BR')} ${dataObj.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
+        }
+
         html += `<tr>
             <td>${missao.motorista.nome}</td>
             <td>${missao.veiculo.placa}</td>
             <td>${formatarData(missao.dataInicio)}</td>
-            <td>${formatarData(missao.dataDevolucao)}</td>
+            <td>${dataDevolucaoDisplay}</td>
             <td><span class="badge ${status === 'Atrasado' ? 'bg-danger' : status === 'Concluído' ? 'bg-success' : status === 'Agendada' ? 'bg-info' : 'bg-warning'}">${status}</span></td>
         </tr>`;
     });
