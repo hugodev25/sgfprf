@@ -1710,14 +1710,14 @@ function renderLista(id, lista, tipo) {
     el.innerHTML = lista.map((item, i) => `
         <div class="d-flex justify-content-between align-items-center mb-2">
             <input type="text" id="input${tipo}${i}" value="${item}" 
-                   class="form-control" style="width: 200px; margin-right: 10px;" placeholder="${tipo}" ${podeEditar() ? '' : 'disabled'}>
+                   class="form-control" style="width: 200px; margin-right: 10px;" placeholder="${tipo}">
             <div>
-                ${podeEditar() ? `<button onclick="salvarAuxiliar('${tipo}', ${i})" class="btn btn-sm btn-outline-success me-1">
+                <button onclick="salvarAuxiliar('${tipo}', ${i})" class="btn btn-sm btn-outline-success me-1">
                     <i class="fas fa-check"></i>
                 </button>
                 <button onclick="excluirAuxiliar('${tipo}', ${i})" class="btn btn-sm btn-outline-danger">
                     <i class="fas fa-trash"></i>
-                </button>` : ''}
+                </button>
             </div>
         </div>
     `).join("");
@@ -1923,7 +1923,7 @@ function abrirInfoServicos(placa) {
         html += `<table class="table table-sm"><thead><tr><th>Data</th><th>Tipo</th><th>Hodômetro</th><th>Descrição</th><th>Status</th><th>Ação</th></tr></thead><tbody>`;
         servicosVeiculo.forEach((s, i) => {
             const statusBadge = s.status === 'pendente' ? '<span class="badge bg-warning">Pendente</span>' : '<span class="badge bg-success">Concluído</span>';
-            html += `<tr><td>${s.data}</td><td>${s.tipo}</td><td>${s.hodometroNaData} km</td><td>${s.descricao || '-'}</td><td>${statusBadge}</td><td>${podeEditar() ? `<button onclick="excluirServico('${placa}', ${i})" class="btn btn-sm btn-outline-danger">Excluir</button>` : ''}</td></tr>`;
+            html += `<tr><td>${s.data}</td><td>${s.tipo}</td><td>${s.hodometroNaData} km</td><td>${s.descricao || '-'}</td><td>${statusBadge}</td><td><button onclick="excluirServico('${placa}', ${i})" class="btn btn-sm btn-outline-danger">Excluir</button></td></tr>`;
         });
         html += `</tbody></table>`;
     }
@@ -1941,7 +1941,7 @@ function abrirInfoServicos(placa) {
             <option value="Outro">Outro</option>
         </select>
         <input type="text" id="descricaoServico" placeholder="Descrição (opcional)" class="form-control mb-2" />
-        ${podeEditar() ? `<button onclick="adicionarServico('${placa}')" class="btn btn-sm btn-success">Adicionar Serviço</button>` : ''}
+        <button onclick="adicionarServico('${placa}')" class="btn btn-sm btn-success">Adicionar Serviço</button>
     </div>`;
     
     const modal = document.createElement('div');
@@ -1957,7 +1957,6 @@ function abrirInfoServicos(placa) {
 }
 
 function adicionarServico(placa) {
-    if (!podeEditar()) return;
     const data = document.getElementById('dataServico').value;
     const tipo = document.getElementById('tipoServico').value;
     const descricao = document.getElementById('descricaoServico').value;
@@ -1980,7 +1979,6 @@ function adicionarServico(placa) {
 }
 
 function excluirServico(placa, index) {
-    if (!podeEditar()) return;
     if (!confirm('Tem certeza?')) return;
     const servicosVeiculo = db.servicosVeiculo.filter(s => s.placa === placa);
     const servicoGlobal = db.servicosVeiculo.findIndex(s => s.placa === placa && 
@@ -2861,7 +2859,6 @@ function excluirMotorista(index) {
 }
 
 function salvarAuxiliar(tipo, index) {
-    if (!podeEditar()) return;
     // Mapear tipo singular para plural
     const tipoPlural = tipo === 'cor' ? 'cores' : tipo === 'lotacao' ? 'lotacoes' : tipo + 's';
     const input = document.getElementById(`input${tipo}${index}`);
@@ -2893,7 +2890,6 @@ function editarAuxiliar(tipo, index) {
 }
 
 function excluirAuxiliar(tipo, index) {
-    if (!podeEditar()) return;
     // Mapear tipo singular para plural
     const tipoPlural = tipo === 'cor' ? 'cores' : tipo === 'lotacao' ? 'lotacoes' : tipo + 's';
     if (!confirm(`Tem certeza que deseja excluir este ${tipo}?`)) return;
