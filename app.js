@@ -29,6 +29,11 @@ const AUTH_KEYS = {
     ultimaAtividade: "prf_ultima_atividade"
 };
 
+// ================= PERMISSÕES =================
+function podeEditar() {
+    return sessaoAtual && sessaoAtual.cargo === 'admin';
+}
+
 const TEMPO_TIMEOUT = 15 * 60 * 1000; // 15 minutos de inatividade
 const TEMPO_AVISO = 60 * 1000; // Avisar 1 minuto antes
 let timeoutInterval = null;
