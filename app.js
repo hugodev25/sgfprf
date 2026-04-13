@@ -2651,19 +2651,19 @@ function calcularProximaTrocaOleo(veiculo) {
     const diasDesdeUltima = Math.floor((agora - dataUltima) / (1000 * 60 * 60 * 24));
     const kmDesdeUltima = (veiculo.hodometro - ultimaTroca.hodometroNaData) || 0;
     
-    // Verificar os limites: 1 ano (365 dias) ou 1.000 km
+    // Verificar os limites: 1 ano (365 dias) ou 10.000 km
     const diasRestantes = 365 - diasDesdeUltima;
-    const kmRestantes = 1000 - kmDesdeUltima;
+    const kmRestantes = 10000 - kmDesdeUltima;
     
     let status = 'OK';
     let mensagem = '';
     
-    if (diasDesdeUltima >= 365 || kmDesdeUltima >= 1000) {
+    if (diasDesdeUltima >= 365 || kmDesdeUltima >= 10000) {
         status = 'VENCIDO';
         mensagem = `TROCA DE ÓLEO VENCIDA!`;
     } else if (diasRestantes <= 30 || kmRestantes <= 1000) {
         status = 'ALERTA';
-        mensagem = `Próxima troca em ${Math.min(diasRestantes, 99)} dias ou ${Math.min(kmRestantes, 1000)} km`;
+        mensagem = `ALERTA: Próxima troca em ${Math.min(diasRestantes, 99)} dias ou ${kmRestantes} km`;
     } else {
         mensagem = `Próxima troca em ${diasRestantes} dias ou ${kmRestantes} km`;
     }
