@@ -878,7 +878,7 @@ function veiculoDisponivelNoPeriodo(placa, dataEntregaStr, dataDevolucaoStr) {
     if (!dataEntrega || !dataDevolucao || dataEntrega > dataDevolucao) return false;
 
     return !db.missoes.some(missao => {
-        if (missao.ativo === false || missao.dataDevolutiva) return false;
+        if (missao.ativo === false || missao.dataDevolutiva || missao.agendada) return false;
         if (!missao.veiculo || missao.veiculo.placa !== placa) return false;
 
         const inicioExistente = parseDataISO(missao.dataEntrega);
